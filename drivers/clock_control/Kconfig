@@ -1,0 +1,5 @@
+if CLOCK_CONTROL
+
+rsource "Kconfig.si5351"
+
+endif # CLOCK_CONTROL

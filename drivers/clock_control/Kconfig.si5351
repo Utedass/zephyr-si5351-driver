@@ -1,0 +1,9 @@
+# Copyright (c) 2025 Jonatan Gezelius
+# SPDX-License-Identifier: MIT
+
+config CLOCK_CONTROL_SI5351
+	bool "si5351 clock control driver"
+	default y
+	depends on DT_HAS_SKYWORKS_SI5351_ENABLED
+	help
+	  This option enables the clock driver for Skyworks si5351 programmable clock generator.
