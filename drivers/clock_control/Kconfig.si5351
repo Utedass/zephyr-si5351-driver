@@ -8,3 +8,11 @@ config CLOCK_CONTROL_SI5351
 	select I2C
 	help
 	  This option enables the clock driver for Skyworks si5351 programmable clock generator.
+
+config CLOCK_CONTROL_SI5351_INIT_PRIORITY
+	int "Init priority for SI5351 clock driver"
+	default 60
+	depends on CLOCK_CONTROL_SI5351
+	help
+	  Initialization priority for the SI5351 driver.
+	  Must be higher than I2C init priority (usually 50)

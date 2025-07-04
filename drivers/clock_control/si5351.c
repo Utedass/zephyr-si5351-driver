@@ -8,6 +8,7 @@
 
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/drivers/i2c.h>
+#include <zephyr/drivers/clock_control/si5351.h>
 
 #include "si5351.h"
 
@@ -43,8 +44,10 @@ static int si5351_setup(const struct device *dev)
 static int si5351_init(const struct device *dev)
 {
     const struct si5351_config *cfg;
+    const struct si5351_data *data;
 
     cfg = dev->config;
+    data = dev->data;
 
     if (!device_is_ready(cfg->i2c.bus))
     {
@@ -74,12 +77,14 @@ static DEVICE_API(clock_control, si5351_driver_api) = {
 };
 
 #define SI5351_INIT(inst)                                      \
-    static struct si5351_config si5351_config_##inst = {       \
+    static struct si5351_data si5351_data_##inst;              \
+    static const struct si5351_config si5351_config_##inst = { \
         .i2c = I2C_DT_SPEC_INST_GET(inst),                     \
     };                                                         \
-    DEVICE_DT_DEFINE(DT_DRV_INST(inst), &si5351_init, NULL,    \
-                     NULL, &si5351_config_##inst, POST_KERNEL, \
-                     CONFIG_SENSOR_INIT_PRIORITY,              \
+    DEVICE_DT_DEFINE(DT_DRV_INST(inst), &si5351_init,          \
+                     NULL, &si5351_data_##inst,                \
+                     &si5351_config_##inst, POST_KERNEL,       \
+                     SI5351_INIT_PRIORITY,                     \
                      &si5351_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(SI5351_INIT)

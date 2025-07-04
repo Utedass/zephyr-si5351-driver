@@ -1,0 +1,10 @@
+/*
+ * Copyright (c) 2025 Jonatan Gezelius
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#ifndef ZEPHYR_INCLUDE_DRIVERS_CLOCK_CONTROL_SI5351_H_
+#define ZEPHYR_INCLUDE_DRIVERS_CLOCK_CONTROL_SI5351_H_
+
+#endif // ZEPHYR_INCLUDE_DRIVERS_CLOCK_CONTROL_SI5351_H_
