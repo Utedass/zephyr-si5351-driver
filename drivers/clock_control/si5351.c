@@ -16,11 +16,27 @@ LOG_MODULE_REGISTER(clock_control_si5351, CONFIG_CLOCK_CONTROL_LOG_LEVEL);
 
 static int si5351_on(const struct device *dev, clock_control_subsys_t subsys)
 {
+    LOG_DBG("SSI5351_on entered");
     return 0;
 }
 
 static int si5351_off(const struct device *dev, clock_control_subsys_t subsys)
 {
+    LOG_DBG("SSI5351_off entered");
+    return 0;
+}
+
+static int si5351_setup(const struct device *dev)
+{
+    const struct si5351_config *config = dev->config;
+
+    uint8_t status;
+    if (i2c_reg_read_byte_dt(&config->i2c, SI5351_REG_ADR_STATUS, &status))
+    {
+        LOG_ERR("Could not read device at 0x%" PRIX16, config->i2c.addr);
+        return -EIO;
+    }
+
     return 0;
 }
 
@@ -36,7 +52,13 @@ static int si5351_init(const struct device *dev)
         return -ENODEV;
     }
 
-    LOG_DBG("si5351 driver loaded");
+    if (si5351_setup(dev) < 0)
+    {
+        LOG_ERR("Failed to setup device!");
+        return -EIO;
+    }
+
+    LOG_DBG("si5351 driver loaded for device at 0x%" PRIX16, cfg->i2c.addr);
 
     return 0;
 }
