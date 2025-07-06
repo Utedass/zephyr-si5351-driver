@@ -80,7 +80,7 @@ typedef enum
 {
     si5351_output_clk_source_xtal,
     si5351_output_clk_source_clkin,
-    si5351_output_clk_source_multisynth,
+    si5351_output_clk_source_multisynth = 3,
 } si5351_output_clk_source_t;
 
 typedef enum
@@ -120,6 +120,22 @@ typedef struct
     uint8_t phase_offset : 7;
 } si5351_output_parameters_t;
 
-int si5351_dummy(const struct device *dev);
+typedef struct
+{
+    bool sys_init;
+    bool plla_loss_of_lock;
+    bool pllb_loss_of_lock;
+    bool clkin_loss_of_signal;
+    bool xtal_loss_of_signal;
+    uint8_t revision_id : 2;
+} si5351_status_t;
+
+int si5351_get_parameters(const struct device *dev, si5351_parameters_t *parameters);
+int si5351_set_parameters(const struct device *dev, si5351_parameters_t const *parameters);
+int si5351_reset_plla(const struct device *dev);
+int si5351_reset_pllb(const struct device *dev);
+
+int si5351_output_get_parameters(const struct device *dev, si5351_output_parameters_t *parameters);
+int si5351_output_set_parameters(const struct device *dev, si5351_output_parameters_t const *parameters);
 
 #endif // ZEPHYR_INCLUDE_DRIVERS_CLOCK_CONTROL_SI5351_H_
