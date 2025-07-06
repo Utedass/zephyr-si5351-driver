@@ -11,3 +11,65 @@ properties:
   
   "#clock-cells":
     const: 0
+
+  powered:
+    type: string
+    enum: ["down", "up"]
+    default: "up"
+    description: Whether this output is powered up at init
+
+  integer-mode:
+    type: boolean
+    description: Enables integer mode if true
+
+  multisynth-source:
+    type: string
+    enum: ["PLLA", "PLLB"]
+    default: "PLLA"
+    description: PLL source for multisynth (PLLB is VCXO for Si5351B devices)
+
+  invert:
+    type: boolean
+    description: Invert output clock polarity
+
+  clock-source:
+    type: string
+    enum: ["xtal", "clkin", "multisynth"]
+    default: "multisynth"
+    description: Source for the clock output
+
+  drive-strength:
+    type: int
+    enum: [2, 4, 6, 8]
+    default: 8
+    description: Drive strength in mA
+
+  p1:
+    type: int
+    default: 0
+    description: Multisynth P1 parameter
+
+  p2:
+    type: int
+    default: 0
+    description: Multisynth P2 parameter
+
+  p3:
+    type: int
+    default: 1
+    description: Multisynth P3 parameter
+
+  r0:
+    type: int
+    enum: [1, 2, 4, 8, 16, 32, 64, 128]
+    default: 1
+    description: R0 output divider
+
+  divide-by-four:
+    type: boolean
+    description: Enable the divide by four mode
+
+  phase-offset:
+    type: int
+    default: 0
+    description: Phase offset in number of 1/4 periods from whichever VCO/PLL associated with this output
