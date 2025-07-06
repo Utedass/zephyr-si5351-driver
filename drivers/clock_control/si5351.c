@@ -15,6 +15,12 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(clock_control_si5351, CONFIG_CLOCK_CONTROL_LOG_LEVEL);
 
+int si5351_dummy(const struct device *dev)
+{
+    LOG_DBG("SSI5351_dummy entered");
+    return 0;
+}
+
 static int si5351_on(const struct device *dev, clock_control_subsys_t subsys)
 {
     LOG_DBG("SSI5351_on entered");
@@ -37,6 +43,8 @@ static int si5351_setup(const struct device *dev)
         LOG_ERR("Could not read device at 0x%" PRIX16, config->i2c.addr);
         return -EIO;
     }
+
+    // Use DT_PROP(something, prop_name) to get properties. But what should >something< be?
 
     return 0;
 }
