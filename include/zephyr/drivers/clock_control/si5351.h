@@ -15,6 +15,21 @@ typedef enum
     si5351_pll_clock_source_clkin,
 } si5351_pll_clock_source_t;
 
+typedef enum
+{
+    si5351_xtal_load_6pf = 1,
+    si5351_xtal_load_8pf,
+    si5351_xtal_load_10pf,
+} si5351_xtal_load_t;
+
+typedef enum
+{
+    si5351_clkin_div_1,
+    si5351_clkin_div_2,
+    si5351_clkin_div_4,
+    si5351_clkin_div_8,
+} si5351_clkin_div_t;
+
 typedef struct
 {
     si5351_pll_clock_source_t clock_source;
@@ -22,6 +37,20 @@ typedef struct
     uint32_t p2 : 20;
     uint32_t p3 : 20;
 } si5351_pll_parameters_t;
+
+typedef struct
+{
+    si5351_clkin_div_t clkin_div;
+    si5351_xtal_load_t xtal_load;
+    si5351_pll_parameters_t plla;
+    si5351_pll_parameters_t pllb;
+} si5351_parameters_t;
+
+typedef enum
+{
+    si5351_output_output_enabled,
+    si5351_output_output_disabled,
+} si5351_output_output_t;
 
 typedef enum
 {
@@ -64,19 +93,20 @@ typedef enum
 
 typedef enum
 {
-    si5351_output_r0_1,
-    si5351_output_r0_2,
-    si5351_output_r0_4,
-    si5351_output_r0_8,
-    si5351_output_r0_16,
-    si5351_output_r0_32,
-    si5351_output_r0_64,
-    si5351_output_r0_128,
-} si5351_output_r0_t;
+    si5351_output_r_1,
+    si5351_output_r_2,
+    si5351_output_r_4,
+    si5351_output_r_8,
+    si5351_output_r_16,
+    si5351_output_r_32,
+    si5351_output_r_64,
+    si5351_output_r_128,
+} si5351_output_r_t;
 
 typedef struct
 {
-    si5351_output_powered_t powered;
+    si5351_output_output_t output_enabled;
+    si5351_output_powered_t powered_up;
     si5351_output_integer_mode_t integer_mode;
     si5351_output_multisynth_source_t multisynth_source;
     si5351_output_invert_t invert;
@@ -85,7 +115,7 @@ typedef struct
     uint32_t p1 : 18;
     uint32_t p2 : 20;
     uint32_t p3 : 20;
-    si5351_output_r0_t r0 : 3;
+    si5351_output_r_t r : 3;
     bool divide_by_four;
     uint8_t phase_offset : 7;
 } si5351_output_parameters_t;

@@ -4,3 +4,58 @@ compatible: "skyworks,si5351"
 
 include: [base.yaml, i2c-device.yaml]
 
+
+properties:
+  clkin-div:
+    type: int
+    enum: [1, 2, 4, 8]
+    default: 1
+    description: Selects input clock divider
+
+  xtal-load:
+    type: int
+    enum: [6, 8, 10]
+    default: 10
+    description: Selects load capacitance for crystal
+
+  plla-clock-source:
+    type: string
+    enum: ["XTAL", "CLKin"]
+    default: "XTAL"
+    description: Clock input to PLLA
+  
+  plla-p1:
+    type: int
+    default: 3328
+    description: PLLA P1 parameter
+
+  plla-p2:
+    type: int
+    default: 0
+    description: PLLA P2 parameter
+
+  plla-p3:
+    type: int
+    default: 1
+    description: PLLA P3 parameter
+
+  pllb-clock-source:
+    type: string
+    enum: ["XTAL", "CLKin"]
+    default: "XTAL"
+    description: Clock input to PLLB
+  
+  pllb-p1:
+    type: int
+    default: 3328
+    description: PLLB P1 parameter
+
+  pllb-p2:
+    type: int
+    default: 0
+    description: PLLB P2 parameter
+
+  pllb-p3:
+    type: int
+    default: 1
+    description: PLLB P3 parameter

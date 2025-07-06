@@ -17,11 +17,21 @@
 
 typedef struct
 {
+    uint8_t clkin_div;
+    uint8_t xtal_load;
+    si5351_pll_parameters_t plla;
+    si5351_pll_parameters_t pllb;
+} si5351_default_config_t;
+
+typedef struct
+{
+    si5351_parameters_t current_parameters;
 } si5351_data_t;
 
 typedef struct
 {
     struct i2c_dt_spec i2c;
+    si5351_default_config_t default_config;
 } si5351_config_t;
 
 typedef struct
@@ -31,7 +41,8 @@ typedef struct
 
 typedef struct
 {
-    uint8_t powered;
+    bool output_enabled;
+    bool powered_up;
     bool integer_mode;
     uint8_t multisynth_source;
     bool invert;
@@ -40,7 +51,7 @@ typedef struct
     uint32_t p1 : 18;
     uint32_t p2 : 20;
     uint32_t p3 : 20;
-    uint8_t r0;
+    uint8_t r;
     bool divide_by_four;
     uint8_t phase_offset : 7;
 } si5351_output_default_config_t;

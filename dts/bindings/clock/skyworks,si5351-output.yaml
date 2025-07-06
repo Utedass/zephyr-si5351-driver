@@ -12,11 +12,13 @@ properties:
   "#clock-cells":
     const: 0
 
-  powered:
-    type: string
-    enum: ["down", "up"]
-    default: "up"
-    description: Whether this output is powered up at init
+  output-enabled:
+    type: boolean
+    description: Whether this clock output is enabled up at init
+
+  powered-up:
+    type: boolean
+    description: Whether this clock circuitry is powered up at init
 
   integer-mode:
     type: boolean
@@ -59,7 +61,7 @@ properties:
     default: 1
     description: Multisynth P3 parameter
 
-  r0:
+  r:
     type: int
     enum: [1, 2, 4, 8, 16, 32, 64, 128]
     default: 1
