@@ -2,6 +2,5 @@ description: Skyworks programmable clock generator
 
 compatible: "skyworks,si5351"
 
-include: [i2c-device.yaml, clock-controller.yaml, base.yaml]
-
+include: [base.yaml, i2c-device.yaml]
 

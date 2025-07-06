@@ -1,0 +1,13 @@
+description: Skyworks Si5351 individual clock output
+
+compatible: "skyworks,si5351-output"
+
+include: [base.yaml, clock-controller.yaml]
+
+properties:
+  reg:
+    required: true
+    description: Clock output number (0-2 for Si5351A)
+  
+  "#clock-cells":
+    const: 0

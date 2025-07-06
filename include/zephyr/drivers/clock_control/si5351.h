@@ -9,11 +9,6 @@
 
 #include <zephyr/device.h>
 
-typedef struct
-{
-    uint8_t output_number;
-} si5351_clock_control_subsys_t;
-
 typedef enum
 {
     si5351_pll_clock_source_xtal,
