@@ -14,6 +14,8 @@
 #define SI5351_INIT_PRIORITY CONFIG_CLOCK_CONTROL_SI5351_INIT_PRIORITY
 
 #define SI5351_REG_STATUS_ADR 0x00
+#define SI5351_REG_INTERRUPT_ADR 0x01
+#define SI5351_REG_INTERRUPT_MASK_ADR 0x02
 #define SI5351_REG_OEB_ADR 0x03
 #define SI5351_REG_OEB_MASK_ADR 0x09
 #define SI5351_REG_PLL_CFG_ADR 0x0f
@@ -56,23 +58,7 @@ typedef struct
     uint8_t xtal_load;
     si5351_pll_parameters_t plla;
     si5351_pll_parameters_t pllb;
-} si5351_default_config_t;
-
-typedef struct
-{
-    si5351_parameters_t current_parameters;
-} si5351_data_t;
-
-typedef struct
-{
-    struct i2c_dt_spec i2c;
-    si5351_default_config_t default_config;
-} si5351_config_t;
-
-typedef struct
-{
-    si5351_output_parameters_t current_parameters;
-} si5351_output_data_t;
+} si5351_dt_config_t;
 
 typedef struct
 {
@@ -89,13 +75,38 @@ typedef struct
     uint8_t r;
     bool divide_by_four;
     uint8_t phase_offset : 7;
-} si5351_output_default_config_t;
+} si5351_output_dt_config_t;
+
+typedef struct
+{
+    bool output_present;
+    si5351_output_parameters_t *current_parameters;
+} si5351_children_t;
+
+typedef struct
+{
+    si5351_parameters_t current_parameters;
+    si5351_children_t outputs[8];
+    uint8_t num_registered_clocks;
+} si5351_data_t;
+
+typedef struct
+{
+    struct i2c_dt_spec i2c;
+    si5351_dt_config_t dt_config;
+    uint8_t num_okay_clocks;
+} si5351_config_t;
+
+typedef struct
+{
+    si5351_output_parameters_t current_parameters;
+} si5351_output_data_t;
 
 typedef struct
 {
     const struct device *parent; // Back-reference to the parent Si5351 device
     uint8_t output_index;        // 0–2 for Si5351A
-    si5351_output_default_config_t default_config;
+    si5351_output_dt_config_t dt_config;
 } si5351_output_config_t;
 
 #endif // ZEPHYR_DRIVERS_CLOCK_CONTROL_SI5351_H_

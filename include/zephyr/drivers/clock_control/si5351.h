@@ -130,10 +130,13 @@ typedef struct
     uint8_t revision_id : 2;
 } si5351_status_t;
 
-int si5351_get_parameters(const struct device *dev, si5351_parameters_t *parameters);
-int si5351_set_parameters(const struct device *dev, si5351_parameters_t const *parameters);
-int si5351_reset_plla(const struct device *dev);
-int si5351_reset_pllb(const struct device *dev);
+typedef enum
+{
+    si5351_pll_index_a,
+    si5351_pll_index_b,
+} si5351_pll_index_t;
+
+int si5351_reset_pll(const struct device *dev, si5351_pll_index_t pll);
 
 int si5351_output_get_parameters(const struct device *dev, si5351_output_parameters_t *parameters);
 int si5351_output_set_parameters(const struct device *dev, si5351_output_parameters_t const *parameters);
