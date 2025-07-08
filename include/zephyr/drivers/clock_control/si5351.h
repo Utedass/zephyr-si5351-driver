@@ -132,13 +132,18 @@ typedef struct
 
 typedef enum
 {
-    si5351_pll_index_a,
-    si5351_pll_index_b,
-} si5351_pll_index_t;
+    si5351_pll_mask_a = 1 << 0,
+    si5351_pll_mask_b = 1 << 1,
+} si5351_pll_mask_t;
 
-int si5351_reset_pll(const struct device *dev, si5351_pll_index_t pll);
+int si5351_reset_pll(const struct device *dev, si5351_pll_mask_t pll);
 
 int si5351_output_get_parameters(const struct device *dev, si5351_output_parameters_t *parameters);
 int si5351_output_set_parameters(const struct device *dev, si5351_output_parameters_t const *parameters);
+
+int si5351_tune_pll(const struct device *dev, si5351_pll_mask_t pll_mask, si5351_pll_parameters_t const *parameters);
+int si5351_set_output(const struct device *dev, uint8_t output_index, si5351_output_output_t state);
+
+int si5351_get_status(const struct device *dev, si5351_status_t *status);
 
 #endif // ZEPHYR_INCLUDE_DRIVERS_CLOCK_CONTROL_SI5351_H_

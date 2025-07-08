@@ -17,6 +17,124 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(clock_control_si5351, CONFIG_CLOCK_CONTROL_LOG_LEVEL);
 
+int si5351_get_status(const struct device *dev, si5351_status_t *status)
+{
+    si5351_config_t const *cfg = dev->config;
+    struct i2c_dt_spec const *i2c = &cfg->i2c;
+
+    uint8_t status_register;
+    if (i2c_reg_read_byte_dt(i2c, SI5351_REG_STATUS_ADR, &status_register))
+    {
+        LOG_ERR("Could not read status register");
+        return -EIO;
+    }
+
+    status->sys_init = (status_register & 0x01) != 0;
+    status->plla_loss_of_lock = (status_register & 0x02) != 0;
+    status->pllb_loss_of_lock = (status_register & 0x04) != 0;
+    status->clkin_loss_of_signal = (status_register & 0x08) != 0;
+    status->xtal_loss_of_signal = (status_register & 0x10) != 0;
+    status->revision_id = (status_register >> 5) & 0x03;
+
+    return 0;
+}
+
+int si5351_tune_pll(const struct device *dev, si5351_pll_mask_t pll_mask, si5351_pll_parameters_t const *parameters)
+{
+    si5351_config_t const *cfg = dev->config;
+    si5351_data_t *data = dev->data;
+    struct i2c_dt_spec const *i2c = &cfg->i2c;
+
+    uint8_t i2c_burst_buffer[SI5351_REG_PLL_X_SIZE * 2];
+
+    // Set PLL multisynth settings
+    if (pll_mask & si5351_pll_mask_a)
+    {
+        memcpy(&data->current_parameters.plla, parameters, sizeof(si5351_pll_parameters_t));
+    }
+    if (pll_mask & si5351_pll_mask_b)
+    {
+        memcpy(&data->current_parameters.pllb, parameters, sizeof(si5351_pll_parameters_t));
+    }
+
+    i2c_burst_buffer[SI5351_REG_PLL_X_P3M_OFFSET] = (data->current_parameters.plla.p3 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P3L_OFFSET] = (data->current_parameters.plla.p3 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P1H_OFFSET] = (data->current_parameters.plla.p1 & 0x030000) >> 16;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P1M_OFFSET] = (data->current_parameters.plla.p1 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P1L_OFFSET] = (data->current_parameters.plla.p1 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P3HP2H_OFFSET] = (data->current_parameters.plla.p3 & 0x0f0000) >> (16 - 4) | (data->current_parameters.plla.p2 & 0x0f0000) >> 16;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P2M_OFFSET] = (data->current_parameters.plla.p2 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P2L_OFFSET] = (data->current_parameters.plla.p2 & 0x0000ff) >> 0;
+
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3M_OFFSET] = (data->current_parameters.pllb.p3 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3L_OFFSET] = (data->current_parameters.pllb.p3 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1H_OFFSET] = (data->current_parameters.pllb.p1 & 0x030000) >> 16;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1M_OFFSET] = (data->current_parameters.pllb.p1 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1L_OFFSET] = (data->current_parameters.pllb.p1 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3HP2H_OFFSET] = (data->current_parameters.pllb.p3 & 0x0f0000) >> (16 - 4) | (data->current_parameters.pllb.p2 & 0x0f0000) >> 16;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P2M_OFFSET] = (data->current_parameters.pllb.p2 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P2L_OFFSET] = (data->current_parameters.pllb.p2 & 0x0000ff) >> 0;
+
+    if (i2c_burst_write_dt(i2c, SI5351_REG_PLL_X_ADR_BASE, i2c_burst_buffer, SI5351_REG_PLL_X_SIZE * 2))
+    {
+        LOG_ERR("Could not write to device");
+        return -EIO;
+    }
+
+    return 0;
+}
+
+static int si5351_write_oeb(const struct device *dev)
+{
+    si5351_config_t const *cfg = dev->config;
+    si5351_data_t *data = dev->data;
+    struct i2c_dt_spec const *i2c = &cfg->i2c;
+    si5351_output_parameters_t const *clock_parameters;
+
+    // Update OEB register
+    uint8_t oeb_register = 0x00;
+    for (int i = 0; i < 8; i++)
+    {
+        if (!data->outputs[i].output_present)
+        {
+            // Disable unused outputs by default
+            oeb_register |= 1 << i;
+            continue;
+        }
+        clock_parameters = data->outputs[i].current_parameters;
+
+        oeb_register |= clock_parameters->output_enabled << i;
+    }
+    if (i2c_reg_write_byte_dt(i2c, SI5351_REG_OEB_ADR, oeb_register))
+    {
+        LOG_ERR("Could not write to device");
+        return -EIO;
+    }
+
+    return 0;
+}
+
+int si5351_set_output(const struct device *dev, uint8_t output_index, si5351_output_output_t state)
+{
+    si5351_data_t *data = dev->data;
+
+    if (output_index >= 8)
+    {
+        LOG_ERR("Invalid output index: %d", output_index);
+        return -EINVAL;
+    }
+
+    if (!data->outputs[output_index].output_present)
+    {
+        LOG_ERR("Output %d is not present", output_index);
+        return -ENODEV;
+    }
+
+    data->outputs[output_index].current_parameters->output_enabled = state;
+
+    return si5351_write_oeb(dev);
+}
+
 static int si5351_write_configuration(const struct device *dev)
 {
     si5351_config_t const *cfg = dev->config;
@@ -187,26 +305,14 @@ static int si5351_write_configuration(const struct device *dev)
     }
 
     // Reset PLLs
-    if (si5351_reset_pll(dev, si5351_pll_index_a | si5351_pll_index_b))
+    if (si5351_reset_pll(dev, si5351_pll_mask_a | si5351_pll_mask_b))
     {
         return -EIO;
     }
 
-    // Enable outputs
-    i2c_burst_buffer[0] = 0x00;
-    for (int i = 0; i < 8; i++)
+    // Update OEB register
+    if (si5351_write_oeb(dev))
     {
-        if (!data->outputs[i].output_present)
-        {
-            continue;
-        }
-        clock_parameters = data->outputs[i].current_parameters;
-
-        i2c_burst_buffer[0] |= clock_parameters->output_enabled << i;
-    }
-    if (i2c_burst_write_dt(i2c, SI5351_REG_OEB_ADR, i2c_burst_buffer, 1))
-    {
-        LOG_ERR("Could not write to device");
         return -EIO;
     }
 
@@ -227,14 +333,14 @@ int si5351_set_parameters(const struct device *dev, si5351_parameters_t const *p
     return 0;
 }
 
-int si5351_reset_pll(const struct device *dev, si5351_pll_index_t pll)
+int si5351_reset_pll(const struct device *dev, si5351_pll_mask_t pll)
 {
     si5351_config_t const *cfg = dev->config;
     struct i2c_dt_spec const *i2c = &cfg->i2c;
 
     uint8_t pll_reset_register = 0;
-    pll_reset_register |= (pll & si5351_pll_index_b) ? 0x80 : 0x00;
-    pll_reset_register |= (pll & si5351_pll_index_a) ? 0x20 : 0x00;
+    pll_reset_register |= (pll & si5351_pll_mask_b) ? 0x80 : 0x00;
+    pll_reset_register |= (pll & si5351_pll_mask_a) ? 0x20 : 0x00;
 
     if (i2c_reg_write_byte_dt(i2c, SI5351_REG_PLL_RESET_ADR, pll_reset_register))
     {
@@ -260,15 +366,25 @@ int si5351_output_set_parameters(const struct device *dev, si5351_output_paramet
 
 static int si5351_output_on(const struct device *dev, clock_control_subsys_t subsys)
 {
-    // const si5351_output_config_t *cfg = dev->config;
+    const si5351_output_config_t *cfg = dev->config;
+    si5351_output_data_t *data = dev->data;
     LOG_DBG("SI5351_on entered");
+
+    data->current_parameters.output_enabled = si5351_output_output_enabled;
+
+    si5351_write_oeb(cfg->parent);
     return 0;
 }
 
 static int si5351_output_off(const struct device *dev, clock_control_subsys_t subsys)
 {
-    // const si5351_output_config_t *cfg = dev->config;
+    const si5351_output_config_t *cfg = dev->config;
+    si5351_output_data_t *data = dev->data;
     LOG_DBG("SI5351_off entered");
+
+    data->current_parameters.output_enabled = si5351_output_output_disabled;
+
+    si5351_write_oeb(cfg->parent);
     return 0;
 }
 
