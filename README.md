@@ -2,6 +2,10 @@
 
 This readme currently serves as a working document for the driver, to figure out what I want to implement and how. It does this by notes and proposed documentation.
 
+Things not planned for implementation right now:
+- VCXO support
+- Spread Spectrum support
+
 ## Device tree entry
 
 ```c
@@ -108,10 +112,11 @@ This readme currently serves as a working document for the driver, to figure out
 si5351_reconfigure(const struct device *dev);
 si5351_load_dt_settings(const struct device *dev);
 
-si5351_set_clkin(const struct device *dev, uint32_t frequency, clkin_div_t div);
+si5351_set_clkin(const struct device *dev, uint32_t frequency, si5351_clkin_div_t div);
 
 si5351_is_xtal_running(const struct device *dev)
 
+si5351_pll_soft_reset(const struct device *dev, uint8_t pll_index);
 si5351_pll_set_frequency(const struct device *dev, uint8_t pll_index, float frequency);
 si5351_pll_set_multiplier(const struct device *dev, uint8_t pll_index, float multiplier);
 si5351_pll_set_multiplier_abc(const struct device *dev, uint8_t pll_index, uint32_t a, uint32_t b, uint32_t c);
@@ -124,14 +129,20 @@ si5351_pll_get_multiplier(const struct device *dev, uint8_t pll_index, float *mu
 si5351_pll_is_fixed(const struct device *dev, uint8_t pll_index);
 si5351_pll_is_locked(const struct device *dev, uint8_t pll_index);
 
+si5351_output_set_source(const struct device *dev, uint8_t output_index, si5351_output_source_t source);
+si5351_output_set_multisynth_source(const struct device *dev, uint8_t output_index, si5351_output_multisynth_source_t source);
 si5351_output_set_frequency(const struct device *dev, uint8_t output_index, float frequency);
 si5351_output_set_divider(const struct device *dev, uint8_t output_index, float multiplier);
 si5351_output_set_divider_abc(const struct device *dev, uint8_t output_index, uint32_t a, uint32_t b, uint32_t c);
 si5351_output_set_divider_parameters(const struct device *dev, uint8_t output_index, uint32_t p1, uint32_t p2, uint32_t p3);
 si5351_output_set_divider_integer(const struct device *dev, uint8_t output_index, uint8_t integer);
 si5351_output_set_divider_fixed(const struct device *dev, uint8_t output_index, bool is_fixed);
-si5351_output_set_driver(const struct device *dev, uint8_t output_index, bool is_enabled);
-si5351_output_set_enabled(const struct device *dev, uint8_t output_index, bool is_enabled);
+si5351_output_set_powered_down(const struct device *dev, uint8_t output_index, bool is_powered_done);
+si5351_output_set_output_enabled(const struct device *dev, uint8_t output_index, bool is_enabled);
+si5351_output_set_output_enable_mask(const struct device *dev, uint8_t output_index, bool is_masked);
+si5351_output_set_inverted(const struct device *dev, uint8_t output_index, bool is_inverted);
+si5351_output_set_phase_offset(const struct device *dev, uint8_t output_index, uint16_t micro_seconds);
+si5351_output_set_phase_offset_val(const struct device *dev, uint8_t output_index, uint8_t val);
 
 si5351_output_get_frequency(const struct device *dev, uint8_t output_index, float *frequency);
 si5351_output_get_divider(const struct device *dev, uint8_t output_index, float *multiplier);
