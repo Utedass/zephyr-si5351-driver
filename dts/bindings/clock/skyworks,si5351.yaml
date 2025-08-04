@@ -34,17 +34,17 @@ properties:
 
   clkin-frequency:
     type: int
-    description: Input clock frequency in Hz
+    description: CLKIN input clock frequency in Hz
 
   clkin-div:
     type: int
     enum: [1, 2, 4, 8]
     default: 1
-    description: Selects input clock divider
+    description: CLKIN input clock divider
 
   plla-clock-source:
     type: string
-    enum: ["XTAL", "CLKin"]
+    enum: ["XTAL", "CLKIN"]
     default: "XTAL"
     description: Clock input to PLLA
 

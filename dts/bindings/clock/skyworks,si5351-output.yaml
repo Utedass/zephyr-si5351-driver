@@ -7,7 +7,7 @@ include: [base.yaml, clock-controller.yaml]
 properties:
   reg:
     required: true
-    description: Clock output number (0-2 for Si5351A)
+    description: Clock output number 0-7 (depending on the device model)
   
   "#clock-cells":
     const: 0

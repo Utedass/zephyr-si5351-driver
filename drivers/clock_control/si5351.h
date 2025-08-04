@@ -53,6 +53,8 @@
 #define SI5351_REG_FANOUT_ADR 0xbb
 
 // Enums must be in same order as in bindings file skyworks,si5351.yaml
+
+// ======== SI5351 PARENT DT CONFIG START ========
 typedef enum
 {
     SI5351_MODEL_SI5351A_B_GT,
@@ -89,6 +91,7 @@ typedef struct
     uint32_t p2 : 20;
     uint32_t p3 : 20;
 
+    bool using_integer_mode;
     bool integer_mode;
 } si5351_pll_dt_config_t;
 
@@ -102,32 +105,94 @@ typedef struct
     uint32_t clkin_frequency;
     uint8_t clkin_div;
 
-    si5351_pll_parameters_t plla;
-    si5351_pll_parameters_t pllb;
+    si5351_pll_dt_config_t plla;
+    si5351_pll_dt_config_t pllb;
 } si5351_dt_config_t;
 
 typedef struct
 {
+    struct i2c_dt_spec i2c;
+    si5351_dt_config_t dt_config;
+    uint8_t num_okay_clocks;
+} si5351_config_t;
+
+// ======== SI5351 PARENT DT CONFIG END ========
+
+// ======== SI5351 CHILD DT CONFIG START ========
+
+typedef struct
+{
+    uint8_t output_index;
     bool output_enabled;
     bool powered_up;
     bool integer_mode;
-    uint8_t multisynth_source;
-    bool invert;
     uint8_t clock_source;
+    uint8_t multisynth_source;
     uint8_t drive_strength;
+    bool invert;
+    bool fixed_divider;
+
+    bool using_frequency;
+    uint32_t frequency;
+    uint32_t frequency_fractional;
+
+    bool using_multiplier;
+    uint32_t a;
+    uint32_t b;
+    uint32_t c;
+
+    bool using_multiplier_parameters;
     uint32_t p1 : 18;
     uint32_t p2 : 20;
     uint32_t p3 : 20;
     uint8_t r;
     bool divide_by_four;
+
+    bool using_phase_offset;
     uint8_t phase_offset : 7;
+
+    bool using_phase_offset_ps;
+    uint32_t phase_offset_ps;
 } si5351_output_dt_config_t;
+
+typedef struct
+{
+    const struct device *parent; // Back-reference to the parent Si5351 device
+    si5351_output_dt_config_t dt_config;
+} si5351_output_config_t;
+
+// ======== SI5351 PARENT DT CONFIG END ========
+
+typedef struct
+{
+    si5351_output_output_t output_enabled;
+    si5351_output_powered_t powered_up;
+    si5351_output_integer_mode_t integer_mode;
+    si5351_output_multisynth_source_t multisynth_source;
+    si5351_output_invert_t invert;
+    si5351_output_clk_source_t clock_source;
+    si5351_output_drive_strength_t drive_strength;
+    uint32_t p1 : 18;
+    uint32_t p2 : 20;
+    uint32_t p3 : 20;
+    si5351_output_r_t r : 3;
+    bool divide_by_four;
+    uint8_t phase_offset : 7;
+} si5351_output_parameters_t;
 
 typedef struct
 {
     bool output_present;
     si5351_output_parameters_t *current_parameters;
 } si5351_children_t;
+
+typedef struct
+{
+    si5351_clkin_div_t clkin_div;
+    si5351_xtal_load_t xtal_load;
+    si5351_pll_parameters_t plla;
+    si5351_pll_parameters_t pllb;
+} si5351_parameters_t;
 
 typedef struct
 {
@@ -138,21 +203,19 @@ typedef struct
 
 typedef struct
 {
-    struct i2c_dt_spec i2c;
-    si5351_dt_config_t dt_config;
-    uint8_t num_okay_clocks;
-} si5351_config_t;
-
-typedef struct
-{
     si5351_output_parameters_t current_parameters;
 } si5351_output_data_t;
 
+// Other internally used structs
+
 typedef struct
 {
-    const struct device *parent; // Back-reference to the parent Si5351 device
-    uint8_t output_index;        // 0–2 for Si5351A
-    si5351_output_dt_config_t dt_config;
-} si5351_output_config_t;
+    bool sys_init;
+    bool plla_loss_of_lock;
+    bool pllb_loss_of_lock;
+    bool clkin_loss_of_signal;
+    bool xtal_loss_of_signal;
+    uint8_t revision_id : 2;
+} si5351_status_t;
 
 #endif // ZEPHYR_DRIVERS_CLOCK_CONTROL_SI5351_H_

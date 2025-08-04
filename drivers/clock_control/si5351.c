@@ -451,28 +451,28 @@ static inline int parse_output_dt_parameters(si5351_output_dt_config_t const *de
     switch (default_config_in->r)
     {
     case 1:
-        config_out->r = si5351_output_r_1;
+        config_out->r = SI5351_OUTPUT_R_1;
         break;
     case 2:
-        config_out->r = si5351_output_r_2;
+        config_out->r = SI5351_OUTPUT_R_2;
         break;
     case 4:
-        config_out->r = si5351_output_r_4;
+        config_out->r = SI5351_OUTPUT_R_4;
         break;
     case 8:
-        config_out->r = si5351_output_r_8;
+        config_out->r = SI5351_OUTPUT_R_8;
         break;
     case 16:
-        config_out->r = si5351_output_r_16;
+        config_out->r = SI5351_OUTPUT_R_16;
         break;
     case 32:
-        config_out->r = si5351_output_r_32;
+        config_out->r = SI5351_OUTPUT_R_32;
         break;
     case 64:
-        config_out->r = si5351_output_r_64;
+        config_out->r = SI5351_OUTPUT_R_64;
         break;
     case 128:
-        config_out->r = si5351_output_r_128;
+        config_out->r = SI5351_OUTPUT_R_128;
         break;
     default:
         LOG_ERR("Invalid argument: clock_source: %d", (int)default_config_in->clock_source);

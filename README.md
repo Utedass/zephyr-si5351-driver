@@ -26,7 +26,7 @@ Things not planned for implementation right now:
         clkin-freq = <10000000>;    // CLKIN frequency in Hz
         clkin-div = <1>;            // 1, 2, 4, 8
 
-        plla-clock-source = "CLKin";
+        plla-clock-source = "CLKIN";
         plla-fixed-multiplier;              // Locks the plla multiplier ratio
 
         plla-frequency = <420000000>;       // Either set the desired frequency in Hz
