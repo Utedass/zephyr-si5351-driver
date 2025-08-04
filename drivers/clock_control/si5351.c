@@ -305,7 +305,7 @@ static int si5351_write_configuration(const struct device *dev)
     }
 
     // Reset PLLs
-    if (si5351_reset_pll(dev, si5351_pll_mask_a | si5351_pll_mask_b))
+    if (si5351_pll_soft_reset(dev, si5351_pll_mask_a | si5351_pll_mask_b))
     {
         return -EIO;
     }
@@ -333,7 +333,7 @@ int si5351_set_parameters(const struct device *dev, si5351_parameters_t const *p
     return 0;
 }
 
-int si5351_reset_pll(const struct device *dev, si5351_pll_mask_t pll)
+int si5351_pll_soft_reset(const struct device *dev, si5351_pll_mask_t pll)
 {
     si5351_config_t const *cfg = dev->config;
     struct i2c_dt_spec const *i2c = &cfg->i2c;
@@ -664,67 +664,132 @@ static DEVICE_API(clock_control, si5351_output_driver_api) = {
     .configure = NULL,
 };
 
+// Helper macros to ensure mutually exclusive properties are not in the device tree
+
+#define DT_NODE_HAS_PROPS_2(node_id, p1, p2) \
+    (DT_NODE_HAS_PROP(node_id, p1) || DT_NODE_HAS_PROP(node_id, p2))
+
+#define DT_NODE_HAS_PROPS_3(node_id, p1, p2, p3) \
+    (DT_NODE_HAS_PROPS_2(node_id, p1, p2) || DT_NODE_HAS_PROP(node_id, p3))
+
+#define DT_NODE_HAS_PROPS_4(node_id, p1, p2, p3, p4) \
+    (DT_NODE_HAS_PROPS_3(node_id, p1, p2, p3) || DT_NODE_HAS_PROP(node_id, p4))
+
+#define DT_NODE_HAS_PROPS_5(node_id, p1, p2, p3, p4, p5) \
+    (DT_NODE_HAS_PROPS_4(node_id, p1, p2, p3, p4) || DT_NODE_HAS_PROP(node_id, p5))
+
+#define _DT_NODE_HAS_PROPS_CHOOSER(_1, _2, _3, _4, _5, NAME, ...) NAME
+
+// One through five properties can be checked for existence
+// DT_NODE_HAS_PROPS(node_id, prop1, prop2 ...)
+#define DT_NODE_HAS_PROPS(node_id, ...)             \
+    _DT_NODE_HAS_PROPS_CHOOSER(__VA_ARGS__,         \
+                               DT_NODE_HAS_PROPS_5, \
+                               DT_NODE_HAS_PROPS_4, \
+                               DT_NODE_HAS_PROPS_3, \
+                               DT_NODE_HAS_PROPS_2, \
+                               DT_NODE_HAS_PROP)(node_id, __VA_ARGS__)
+
+#define UNPACK_GROUP_IMPL(...) __VA_ARGS__
+#define UNPACK_GROUP(args) UNPACK_GROUP_IMPL args
+
+#define DT_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(node_id, a, b)                                                    \
+    BUILD_ASSERT(!(DT_NODE_HAS_PROPS(node_id, UNPACK_GROUP(a)) && DT_NODE_HAS_PROPS(node_id, UNPACK_GROUP(b))), \
+                 "DT error: si5351 cannot have Properties from groupA " #a " and groupB " #b " set")
+
+#define DT_INST_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(inst, a, b) \
+    DT_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(DT_DRV_INST(inst), a, b)
+
+/*
+#define MUTUALLY_EXCLUSIVE_PROPERTIES(node_id, prop1, prop2)                              \
+BUILD_ASSERT(!(DT_NODE_HAS_PROP(node_id, prop1) && DT_NODE_HAS_PROP(node_id, prop2)), \
+             "DT error: si5351 cannot have both " #prop1 " and " #prop2 " set")
+
+#define INST_MUTUALLY_EXCLUSIVE_PROPERTIES(inst, prop1, prop2) \
+MUTUALLY_EXCLUSIVE_PROPERTIES(DT_DRV_INST(inst), prop1, prop2)
+
+#define MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(node_id, propA1, propA2, propA3, propB1, propB2, propB3) \
+BUILD_ASSERT(                                                                                   \
+    !(                                                                                          \
+        (DT_NODE_HAS_PROP(node_id, propA1) ||                                                   \
+         DT_NODE_HAS_PROP(node_id, propA2) ||                                                   \
+         DT_NODE_HAS_PROP(node_id, propA3)) &&                                                  \
+        (DT_NODE_HAS_PROP(node_id, propB1) ||                                                   \
+         DT_NODE_HAS_PROP(node_id, propB2) ||                                                   \
+         DT_NODE_HAS_PROP(node_id, propB3))),                                                   \
+    "DT error: Properties from groupA (" #propA1 ", " #propA2 ", " #propA3 ") and groupB (" #propB1 ", " #propB2 ", " #propB3 ") cannot be set together")
+
+#define INST_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(inst, propA1, propA2, propA3, propB1, propB2, propB3) \
+MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(DT_DRV_INST(inst), propA1, propA2, propA3, propB1, propB2, propB3)
+*/
+
 // Macro called once per clock output defined in the device tree
 // This parses the options given in the device tree and assigns them to the
 // dt_config struct. The output_init function will copy this to the
 // data->current_config during runtime initialization
-#define SI5351_OUTPUT_INIT(child_node_id)                                       \
-    static si5351_output_data_t si5351_output_data##child_node_id;              \
-    static const si5351_output_config_t si5351_output_config##child_node_id = { \
-        .parent = DEVICE_DT_GET(DT_PARENT(child_node_id)),                      \
-        .output_index = DT_REG_ADDR(child_node_id),                             \
-        .dt_config = {                                                          \
-            .output_enabled = DT_PROP(child_node_id, output_enabled),           \
-            .powered_up = DT_PROP(child_node_id, powered_up),                   \
-            .integer_mode = DT_PROP(child_node_id, integer_mode),               \
-            .multisynth_source = DT_ENUM_IDX(child_node_id, multisynth_source), \
-            .invert = DT_PROP(child_node_id, invert),                           \
-            .clock_source = DT_ENUM_IDX(child_node_id, clock_source),           \
-            .drive_strength = DT_PROP(child_node_id, drive_strength),           \
-            .p1 = DT_PROP(child_node_id, p1),                                   \
-            .p2 = DT_PROP(child_node_id, p2),                                   \
-            .p3 = DT_PROP(child_node_id, p3),                                   \
-            .r = DT_PROP(child_node_id, r),                                     \
-            .divide_by_four = DT_PROP(child_node_id, divide_by_four),           \
-            .phase_offset = DT_PROP(child_node_id, phase_offset),               \
-        },                                                                      \
-    };                                                                          \
-    DEVICE_DT_DEFINE(child_node_id, &si5351_output_init, NULL,                  \
-                     &si5351_output_data##child_node_id,                        \
-                     &si5351_output_config##child_node_id, POST_KERNEL,         \
+#define SI5351_OUTPUT_INIT(child_node_id)                                                                     \
+    static si5351_output_data_t si5351_output_data##child_node_id;                                            \
+    static const si5351_output_config_t si5351_output_config##child_node_id = {                               \
+        .parent = DEVICE_DT_GET(DT_PARENT(child_node_id)),                                                    \
+        .output_index = DT_REG_ADDR(child_node_id),                                                           \
+        .dt_config = {                                                                                        \
+            .output_enabled = DT_PROP(child_node_id, output_enabled),                                         \
+            .powered_up = DT_PROP(child_node_id, powered_up),                                                 \
+            .integer_mode = DT_PROP(child_node_id, integer_mode),                                             \
+            .multisynth_source = DT_ENUM_IDX(child_node_id, multisynth_source),                               \
+            .invert = DT_PROP(child_node_id, invert),                                                         \
+            .clock_source = DT_ENUM_IDX(child_node_id, clock_source),                                         \
+            .drive_strength = DT_PROP(child_node_id, drive_strength),                                         \
+            .p1 = DT_PROP_OR(child_node_id, p1, 0),                                                           \
+            .p2 = DT_PROP_OR(child_node_id, p2, 0),                                                           \
+            .p3 = DT_PROP_OR(child_node_id, p3, 0),                                                           \
+            .r = DT_PROP_OR(child_node_id, r, 0),                                                             \
+            .divide_by_four = DT_PROP(child_node_id, divide_by_four),                                         \
+            .phase_offset = DT_PROP(child_node_id, phase_offset),                                             \
+        },                                                                                                    \
+    };                                                                                                        \
+    DT_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(child_node_id, (frequency, frequency_fractional), (a, b, v));       \
+    DT_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(child_node_id, (frequency, frequency_fractional), (p1, p2, p3, r)); \
+    DT_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(child_node_id, (a, b, c), (p1, p2, p3, r));                         \
+    DEVICE_DT_DEFINE(child_node_id, &si5351_output_init, NULL,                                                \
+                     &si5351_output_data##child_node_id,                                                      \
+                     &si5351_output_config##child_node_id, POST_KERNEL,                                       \
                      SI5351_INIT_PRIORITY, &si5351_output_driver_api)
 
 // Macro, called once per si5351 instance
 // This parses the options given in the device tree and assigns them to the
 // dt_config struct. The output_init function will copy this to the
 // data->current_config during runtime initialization
-#define SI5351_INIT(inst)                                                  \
-    static si5351_data_t si5351_data_##inst;                               \
-    static const si5351_config_t si5351_config_##inst = {                  \
-        .i2c = I2C_DT_SPEC_INST_GET(inst),                                 \
-        .dt_config = {                                                     \
-            .clkin_div = DT_INST_PROP(inst, clkin_div),                    \
-            .xtal_load = DT_INST_PROP(inst, xtal_load),                    \
-            .plla = {                                                      \
-                .clock_source = DT_INST_ENUM_IDX(inst, plla_clock_source), \
-                .p1 = DT_INST_PROP(inst, plla_p1),                         \
-                .p2 = DT_INST_PROP(inst, plla_p2),                         \
-                .p3 = DT_INST_PROP(inst, plla_p3),                         \
-            },                                                             \
-            .pllb = {                                                      \
-                .clock_source = DT_INST_ENUM_IDX(inst, pllb_clock_source), \
-                .p1 = DT_INST_PROP(inst, pllb_p1),                         \
-                .p2 = DT_INST_PROP(inst, pllb_p2),                         \
-                .p3 = DT_INST_PROP(inst, pllb_p3),                         \
-            },                                                             \
-        },                                                                 \
-        .num_okay_clocks = DT_INST_CHILD_NUM_STATUS_OKAY(inst),            \
-    };                                                                     \
-    DEVICE_DT_INST_DEFINE(inst, &si5351_init, NULL,                        \
-                          &si5351_data_##inst,                             \
-                          &si5351_config_##inst, POST_KERNEL,              \
-                          SI5351_INIT_PRIORITY,                            \
-                          NULL);                                           \
+#define SI5351_INIT(inst)                                                                                                       \
+    static si5351_data_t si5351_data_##inst;                                                                                    \
+    static const si5351_config_t si5351_config_##inst = {                                                                       \
+        .i2c = I2C_DT_SPEC_INST_GET(inst),                                                                                      \
+        .dt_config = {                                                                                                          \
+            .clkin_div = DT_INST_PROP(inst, clkin_div),                                                                         \
+            .xtal_load = DT_INST_PROP(inst, xtal_load),                                                                         \
+            .plla = {                                                                                                           \
+                .clock_source = DT_INST_ENUM_IDX(inst, plla_clock_source),                                                      \
+                .p1 = DT_INST_PROP_OR(inst, plla_p1, 0),                                                                        \
+                .p2 = DT_INST_PROP_OR(inst, plla_p2, 0),                                                                        \
+                .p3 = DT_INST_PROP_OR(inst, plla_p3, 0),                                                                        \
+            },                                                                                                                  \
+            .pllb = {                                                                                                           \
+                .clock_source = DT_INST_ENUM_IDX(inst, pllb_clock_source),                                                      \
+                .p1 = DT_INST_PROP_OR(inst, pllb_p1, 0),                                                                        \
+                .p2 = DT_INST_PROP_OR(inst, pllb_p2, 0),                                                                        \
+                .p3 = DT_INST_PROP_OR(inst, pllb_p3, 0),                                                                        \
+            },                                                                                                                  \
+        },                                                                                                                      \
+        .num_okay_clocks = DT_INST_CHILD_NUM_STATUS_OKAY(inst),                                                                 \
+    };                                                                                                                          \
+    DT_INST_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(inst, (plla_frequency, plla_frequency_fractional), (plla_a, plla_b, plla_c));    \
+    DT_INST_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(inst, (plla_frequency, plla_frequency_fractional), (plla_p1, plla_p2, plla_p3)); \
+    DT_INST_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(inst, (plla_a, plla_b, plla_c), (plla_p1, plla_p2, plla_p3));                    \
+    DEVICE_DT_INST_DEFINE(inst, &si5351_init, NULL,                                                                             \
+                          &si5351_data_##inst,                                                                                  \
+                          &si5351_config_##inst, POST_KERNEL,                                                                   \
+                          SI5351_INIT_PRIORITY,                                                                                 \
+                          NULL);                                                                                                \
     DT_INST_FOREACH_CHILD_STATUS_OKAY(inst, SI5351_OUTPUT_INIT)
 
 // Macro to call SI5351 for each instance in the device tree, provided by Zephyrs devicetree.h

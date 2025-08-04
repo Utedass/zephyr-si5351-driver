@@ -24,21 +24,17 @@ properties:
     type: boolean
     description: Enables integer mode if true
 
+  clock-source:
+    type: string
+    enum: ["XTAL", "CLKIN", "multisynth"]
+    default: "multisynth"
+    description: Source for the clock output
+
   multisynth-source:
     type: string
     enum: ["PLLA", "PLLB"]
     default: "PLLA"
     description: PLL source for multisynth (PLLB is VCXO for Si5351B devices)
-
-  invert:
-    type: boolean
-    description: Invert output clock polarity
-
-  clock-source:
-    type: string
-    enum: ["xtal", "clkin", "multisynth"]
-    default: "multisynth"
-    description: Source for the clock output
 
   drive-strength:
     type: int
@@ -46,25 +42,49 @@ properties:
     default: 8
     description: Drive strength in mA
 
+  invert:
+    type: boolean
+    description: Invert output clock polarity
+
+  fixed-divider:
+    type: boolean
+    description: If true, the output divider is fixed and the driver won't change it, otherwise it is calculated based on the desired frequency
+  
+  frequency:
+    type: int
+    description: Desired output frequency in Hz
+  
+  frequency-fractional:
+    type: int
+    description: Desired output frequency fractional part of Hz, desired frequency = <frequency>.<frequency-fractional>
+  
+  a:
+    type: int
+    description: Multisynth A in divider = A + B / C
+  
+  b:
+    type: int
+    description: Multisynth B in divider = A + B / C
+  
+  c:
+    type: int
+    description: Multisynth C in divider = A + B / C
+
   p1:
     type: int
-    default: 0
     description: Multisynth P1 parameter
 
   p2:
     type: int
-    default: 0
     description: Multisynth P2 parameter
 
   p3:
     type: int
-    default: 1
     description: Multisynth P3 parameter
 
   r:
     type: int
     enum: [1, 2, 4, 8, 16, 32, 64, 128]
-    default: 1
     description: R0 output divider
 
   divide-by-four:
@@ -73,5 +93,8 @@ properties:
 
   phase-offset:
     type: int
-    default: 0
     description: Phase offset in number of 1/4 periods from whichever VCO/PLL associated with this output
+  
+  phase-offset-ps:
+    type: int
+    description: Phase offset in pico seconds

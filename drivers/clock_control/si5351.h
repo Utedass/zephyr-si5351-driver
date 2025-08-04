@@ -52,10 +52,56 @@
 #define SI5351_REG_XTAL_LOAD_ADR 0xb7
 #define SI5351_REG_FANOUT_ADR 0xbb
 
+// Enums must be in same order as in bindings file skyworks,si5351.yaml
+typedef enum
+{
+    SI5351_MODEL_SI5351A_B_GT,
+    SI5351_MODEL_SI5351A_B_GM1,
+    SI5351_MODEL_SI5351A_B_GM,
+    SI5351_MODEL_SI5351B_B_GM1,
+    SI5351_MODEL_SI5351B_B_GM,
+    SI5351_MODEL_SI5351C_B_GM1,
+    SI5351_MODEL_SI5351C_B_GM
+} si5351_model_t;
+
+typedef enum
+{
+    SI5351_PLL_CLOCK_SOURCE_DT_CONFIG_XTAL,
+    SI5351_PLL_CLOCK_SOURCE_DT_CONFIG_CLKIN,
+} si5351_pll_clock_source_dt_config_t;
+
 typedef struct
 {
-    uint8_t clkin_div;
+    si5351_pll_clock_source_dt_config_t clock_source;
+    bool fixed_multiplier;
+
+    bool using_frequency;
+    uint32_t frequency;
+    uint32_t frequency_fractional;
+
+    bool using_multiplier;
+    uint32_t a;
+    uint32_t b;
+    uint32_t c;
+
+    bool using_multiplier_parameters;
+    uint32_t p1 : 18;
+    uint32_t p2 : 20;
+    uint32_t p3 : 20;
+
+    bool integer_mode;
+} si5351_pll_dt_config_t;
+
+typedef struct
+{
+    si5351_model_t model;
+
+    uint8_t xtal_frequency;
     uint8_t xtal_load;
+
+    uint32_t clkin_frequency;
+    uint8_t clkin_div;
+
     si5351_pll_parameters_t plla;
     si5351_pll_parameters_t pllb;
 } si5351_dt_config_t;

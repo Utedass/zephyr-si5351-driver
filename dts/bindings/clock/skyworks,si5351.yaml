@@ -6,11 +6,25 @@ include: [base.yaml, i2c-device.yaml]
 
 
 properties:
-  clkin-div:
+  model:
+    type: string
+    enum:
+      - si5351a-b-gt
+      - si5351a-b-gm1
+      - si5351a-b-gm
+      - si5351b-b-gm1
+      - si5351b-b-gm
+      - si5351c-b-gm1
+      - si5351c-b-gm
+    required: true
+    description: "Allowed values are: si5351a-b-gt, si5351a-b-gm1, si5351a-b-gm, si5351b-b-gm1, si5351b-b-gm, si5351c-b-gm1, si5351c-b-gm"
+
+  xtal-frequency:
     type: int
-    enum: [1, 2, 4, 8]
-    default: 1
-    description: Selects input clock divider
+    enum: [25, 27]
+    default: 25
+    required: true
+    description: Crystal frequency in MHz
 
   xtal-load:
     type: int
@@ -18,25 +32,60 @@ properties:
     default: 10
     description: Selects load capacitance for crystal
 
+  clkin-frequency:
+    type: int
+    description: Input clock frequency in Hz
+
+  clkin-div:
+    type: int
+    enum: [1, 2, 4, 8]
+    default: 1
+    description: Selects input clock divider
+
   plla-clock-source:
     type: string
     enum: ["XTAL", "CLKin"]
     default: "XTAL"
     description: Clock input to PLLA
+
+  plla-fixed-multiplier:
+    type: boolean
+    description: If true, PLLA multiplier is fixed and the driver won't change it, otherwise it is calculated based on the desired frequency
+
+  plla-frequency:
+    type: int
+    description: Desired PLLA fvco frequency in Hz
+
+  plla-frequency-fractional:
+    type: int
+    description: Desired PLLA fvco frequency fractional part of Hz, desired frequency = <frequency>.<frequency-fractional>
+
+  plla-integer-mode:
+    type: boolean
+    description: Enables integer mode for PLLA if true
+
+  plla-a:
+    type: int
+    description: PLLA A in multiplier = A + B / C
+
+  plla-b:
+    type: int
+    description: PLLA B in multiplier = A + B / C
+  
+  plla-c:
+    type: int
+    description: PLLA C in multiplier = A + B / C
   
   plla-p1:
     type: int
-    default: 3328
     description: PLLA P1 parameter
 
   plla-p2:
     type: int
-    default: 0
     description: PLLA P2 parameter
 
   plla-p3:
     type: int
-    default: 1
     description: PLLA P3 parameter
 
   pllb-clock-source:
@@ -44,6 +93,34 @@ properties:
     enum: ["XTAL", "CLKin"]
     default: "XTAL"
     description: Clock input to PLLB
+
+  pllb-fixed-multiplier:
+    type: boolean
+    description: If true, PLLB multiplier is fixed and the driver won't change it, otherwise it is calculated based on the desired frequency
+
+  pllb-frequency:
+    type: int
+    description: Desired PLLB fvco frequency in Hz
+
+  pllb-frequency-fractional:
+    type: int
+    description: Desired PLLB fvco frequency fractional part of Hz, desired frequency = <frequency>.<frequency-fractional>
+
+  pllb-integer-mode:
+    type: boolean
+    description: Enables integer mode for PLLB if true
+
+  pllb-a:
+    type: int
+    description: PLLB A in multiplier = A + B / C
+
+  pllb-b:
+    type: int
+    description: PLLB B in multiplier = A + B / C
+
+  pllb-c:
+    type: int
+    description: PLLB C in multiplier = A + B / C
   
   pllb-p1:
     type: int
