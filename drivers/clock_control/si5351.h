@@ -66,6 +66,31 @@ typedef enum
     SI5351_MODEL_SI5351C_B_GM
 } si5351_model_t;
 
+typedef struct
+{
+    uint8_t number_of_outputs;
+    bool pllb_present;
+    bool clkin_present;
+    bool vcxo_present;
+} si5351_model_feature_t;
+
+static const si5351_model_feature_t si5351_model_features[] = {
+    // SI5351_MODEL_SI5351A_B_GT
+    {.number_of_outputs = 3, .pllb_present = true, .clkin_present = false, .vcxo_present = false},
+    // SI5351_MODEL_SI5351A_B_GM1
+    {.number_of_outputs = 4, .pllb_present = true, .clkin_present = false, .vcxo_present = false},
+    // SI5351_MODEL_SI5351A_B_GM
+    {.number_of_outputs = 8, .pllb_present = true, .clkin_present = false, .vcxo_present = false},
+    // SI5351_MODEL_SI5351B_B_GM1
+    {.number_of_outputs = 4, .pllb_present = false, .clkin_present = false, .vcxo_present = true},
+    // SI5351_MODEL_SI5351B_B_GM
+    {.number_of_outputs = 8, .pllb_present = false, .clkin_present = false, .vcxo_present = true},
+    // SI5351_MODEL_SI5351C_B_GM1
+    {.number_of_outputs = 4, .pllb_present = true, .clkin_present = true, .vcxo_present = false},
+    // SI5351_MODEL_SI5351C_B_GM
+    {.number_of_outputs = 8, .pllb_present = true, .clkin_present = true, .vcxo_present = false},
+};
+
 typedef enum
 {
     SI5351_PLL_CLOCK_SOURCE_DT_CONFIG_XTAL,
@@ -162,20 +187,62 @@ typedef struct
 
 // ======== SI5351 CLOCK OUTPUT DT CONFIG END ========
 
+typedef enum
+{
+    SI5351_OUTPUT_OUTPUT_ENABLED,
+    SI5351_OUTPUT_OUTPUT_DISABLED,
+} si5351_output_output_t;
+
+typedef enum
+{
+    SI5351_OUTPUT_POWERED_UP,
+    SI5351_OUTPUT_POWERED_DOWN,
+} si5351_output_powered_t;
+
+typedef enum
+{
+    SI5351_OUTPUT_INTEGER_MODE_DISABLED,
+    SI5351_OUTPUT_INTEGER_MODE_ENABLED,
+} si5351_output_integer_mode_t;
+
+typedef enum
+{
+    SI5351_OUTPUT_CLK_SOURCE_XTAL,
+    SI5351_OUTPUT_CLK_SOURCE_CLKIN,
+    SI5351_OUTPUT_CLK_SOURCE_MULTISYNTH = 3,
+} si5351_output_clk_source_t;
+
+typedef enum
+{
+    SI5351_OUTPUT_DRIVE_STRENGTH_2MA,
+    SI5351_OUTPUT_DRIVE_STRENGTH_4MA,
+    SI5351_OUTPUT_DRIVE_STRENGTH_6MA,
+    SI5351_OUTPUT_DRIVE_STRENGTH_8MA,
+} si5351_output_drive_strength_t;
+
+typedef enum
+{
+    SI5351_OUTPUT_INVERT_DISABLED,
+    SI5351_OUTPUT_INVERT_ENABLED,
+} si5351_output_invert_t;
+
 typedef struct
 {
     si5351_output_output_t output_enabled;
     si5351_output_powered_t powered_up;
     si5351_output_integer_mode_t integer_mode;
-    si5351_output_multisynth_source_t multisynth_source;
-    si5351_output_invert_t invert;
     si5351_output_clk_source_t clock_source;
+    si5351_output_multisynth_source_t multisynth_source;
     si5351_output_drive_strength_t drive_strength;
+    si5351_output_invert_t invert;
+    bool fixed_divider;
+
     uint32_t p1 : 18;
     uint32_t p2 : 20;
     uint32_t p3 : 20;
     si5351_output_r_t r : 3;
     bool divide_by_four;
+
     uint8_t phase_offset : 7;
 } si5351_output_data_t;
 
@@ -183,6 +250,7 @@ typedef struct
 {
     bool output_present;
     si5351_output_data_t *clock_output_data;
+    si5351_output_config_t const *clock_output_cfg;
 } si5351_children_t;
 
 typedef struct

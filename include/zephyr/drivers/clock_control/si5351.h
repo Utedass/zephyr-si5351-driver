@@ -52,48 +52,10 @@ typedef struct
 
 typedef enum
 {
-    SI5351_OUTPUT_OUTPUT_ENABLED,
-    SI5351_OUTPUT_OUTPUT_DISABLED,
-} si5351_output_output_t;
-
-typedef enum
-{
-    SI5351_OUTPUT_POWERED_UP,
-    SI5351_OUTPUT_POWERED_DOWN,
-} si5351_output_powered_t;
-
-typedef enum
-{
-    SI5351_OUTPUT_INTEGER_MODE_DISABLED,
-    SI5351_OUTPUT_INTEGER_MODE_ENABLED,
-} si5351_output_integer_mode_t;
-
-typedef enum
-{
     SI5351_OUTPUT_MULTISYNTH_SOURCE_PLLA,
     SI5351_OUTPUT_MULTISYNTH_SOURCE_PLLB,
+    SI5351_OUTPUT_MULTISYNTH_SOURCE_CLKIN = 1,
 } si5351_output_multisynth_source_t;
-
-typedef enum
-{
-    SI5351_OUTPUT_INVERT_DISABLED,
-    SI5351_OUTPUT_INVERT_ENABLED,
-} si5351_output_invert_t;
-
-typedef enum
-{
-    SI5351_OUTPUT_CLK_SOURCE_XTAL,
-    SI5351_OUTPUT_CLK_SOURCE_CLKIN,
-    SI5351_OUTPUT_CLK_SOURCE_MULTISYNTH = 3,
-} si5351_output_clk_source_t;
-
-typedef enum
-{
-    SI5351_OUTPUT_DRIVE_STRENGTH_2MA,
-    SI5351_OUTPUT_DRIVE_STRENGTH_4MA,
-    SI5351_OUTPUT_DRIVE_STRENGTH_6MA,
-    SI5351_OUTPUT_DRIVE_STRENGTH_8MA,
-} si5351_output_drive_strength_t;
 
 typedef enum
 {

@@ -135,7 +135,139 @@ int si5351_set_output(const struct device *dev, uint8_t output_index, si5351_out
     return si5351_write_oeb(dev);
 }
 
-static int si5351_write_configuration(const struct device *dev)
+// Convert from device tree parameter to correct C representation of parameters
+static inline int parse_output_dt_parameters(si5351_output_dt_config_t const *default_config_in, si5351_output_data_t *config_out)
+{
+    config_out->output_enabled = default_config_in->output_enabled ? SI5351_OUTPUT_OUTPUT_ENABLED : SI5351_OUTPUT_OUTPUT_DISABLED;
+
+    config_out->powered_up = default_config_in->powered_up ? SI5351_OUTPUT_POWERED_UP : SI5351_OUTPUT_POWERED_DOWN;
+
+    config_out->integer_mode = default_config_in->integer_mode ? SI5351_OUTPUT_INTEGER_MODE_ENABLED : SI5351_OUTPUT_INTEGER_MODE_DISABLED;
+
+    switch (default_config_in->multisynth_source)
+    {
+    case 0:
+        config_out->multisynth_source = SI5351_OUTPUT_MULTISYNTH_SOURCE_PLLA;
+        break;
+    case 1:
+        config_out->multisynth_source = SI5351_OUTPUT_MULTISYNTH_SOURCE_PLLB;
+        break;
+    default:
+        LOG_ERR("Invalid argument: multisynth_source: %d", (int)default_config_in->multisynth_source);
+        return -EINVAL;
+    }
+
+    config_out->invert = default_config_in->invert ? SI5351_OUTPUT_INVERT_ENABLED : SI5351_OUTPUT_INVERT_DISABLED;
+
+    switch (default_config_in->clock_source)
+    {
+    case 0:
+        config_out->clock_source = SI5351_OUTPUT_CLK_SOURCE_XTAL;
+        break;
+    case 1:
+        config_out->clock_source = SI5351_OUTPUT_CLK_SOURCE_CLKIN;
+        break;
+    case 2:
+        config_out->clock_source = SI5351_OUTPUT_CLK_SOURCE_MULTISYNTH;
+        break;
+    default:
+        LOG_ERR("Invalid argument: clock_source: %d", (int)default_config_in->clock_source);
+        return -EINVAL;
+    }
+
+    config_out->drive_strength = default_config_in->drive_strength;
+    config_out->p1 = default_config_in->p1;
+    config_out->p2 = default_config_in->p2;
+    config_out->p3 = default_config_in->p3;
+    config_out->r = default_config_in->r;
+
+    switch (default_config_in->r)
+    {
+    case 1:
+        config_out->r = SI5351_OUTPUT_R_1;
+        break;
+    case 2:
+        config_out->r = SI5351_OUTPUT_R_2;
+        break;
+    case 4:
+        config_out->r = SI5351_OUTPUT_R_4;
+        break;
+    case 8:
+        config_out->r = SI5351_OUTPUT_R_8;
+        break;
+    case 16:
+        config_out->r = SI5351_OUTPUT_R_16;
+        break;
+    case 32:
+        config_out->r = SI5351_OUTPUT_R_32;
+        break;
+    case 64:
+        config_out->r = SI5351_OUTPUT_R_64;
+        break;
+    case 128:
+        config_out->r = SI5351_OUTPUT_R_128;
+        break;
+    default:
+        LOG_ERR("Invalid argument: clock_source: %d", (int)default_config_in->clock_source);
+        return -EINVAL;
+    }
+
+    config_out->divide_by_four = default_config_in->divide_by_four;
+
+    config_out->phase_offset = default_config_in->phase_offset;
+
+    return 0;
+}
+
+static int si5351_parse_dt_parameters(si5351_dt_config_t const *default_config_in, si5351_data_t *config_out)
+{
+    switch (default_config_in->clkin_div)
+    {
+    case 1:
+        config_out->clkin_div = SI5351_CLKIN_DIV_1;
+        break;
+    case 2:
+        config_out->clkin_div = SI5351_CLKIN_DIV_2;
+        break;
+    case 4:
+        config_out->clkin_div = SI5351_CLKIN_DIV_4;
+        break;
+    case 8:
+        config_out->clkin_div = SI5351_CLKIN_DIV_8;
+        break;
+    default:
+        LOG_ERR("Invalid argument: clkin_div: %d", (int)default_config_in->clkin_div);
+        return -EINVAL;
+    };
+
+    switch (default_config_in->xtal_load)
+    {
+    case 6:
+        config_out->xtal_load = SI5351_XTAL_LOAD_6PF;
+        break;
+    case 8:
+        config_out->xtal_load = SI5351_XTAL_LOAD_8PF;
+        break;
+    case 10:
+        config_out->xtal_load = SI5351_XTAL_LOAD_10PF;
+        break;
+    default:
+        LOG_ERR("Invalid argument: xtal_load: %d", (int)default_config_in->xtal_load);
+        return -EINVAL;
+    };
+
+    config_out->plla.p1 = default_config_in->plla.p1;
+    config_out->plla.p2 = default_config_in->plla.p2;
+    config_out->plla.p3 = default_config_in->plla.p3;
+
+    config_out->pllb.p1 = default_config_in->pllb.p1;
+    config_out->pllb.p2 = default_config_in->pllb.p2;
+    config_out->pllb.p3 = default_config_in->pllb.p3;
+
+    return 0;
+}
+
+int si5351_reapply_configuration(const struct device *dev)
 {
     si5351_config_t const *cfg = dev->config;
     si5351_data_t *data = dev->data;
@@ -319,6 +451,47 @@ static int si5351_write_configuration(const struct device *dev)
     return 0;
 }
 
+int si5351_apply_dt_settings(const struct device *dev)
+{
+    si5351_config_t const *cfg = dev->config;
+    si5351_data_t *data = dev->data;
+
+    si5351_parse_dt_parameters(&cfg->dt_config, data);
+
+    for (int i = 0; i < si5351_model_features[cfg->dt_config.model].number_of_outputs; i++)
+    {
+
+        if (data->outputs[i].output_present)
+        {
+            si5351_output_config_t const *output_cfg = data->outputs[i].clock_output_cfg;
+            si5351_output_data_t *output_data = data->outputs[i].clock_output_data;
+            parse_output_dt_parameters(&output_cfg->dt_config, output_data);
+        }
+    }
+
+    return 0;
+}
+
+int si5351_set_clkin(const struct device *dev, uint32_t frequency, si5351_clkin_div_t div)
+{
+    return 0;
+}
+
+int si5351_get_revision_number(const struct device *dev, si5351_revision_number_t *revision_number)
+{
+    return 0;
+}
+
+bool si5351_is_xtal_running(const struct device *dev)
+{
+    return false;
+}
+
+bool si5351_is_clkin_running(const struct device *dev)
+{
+    return false;
+}
+
 int si5351_pll_soft_reset(const struct device *dev, si5351_pll_mask_t pll)
 {
     si5351_config_t const *cfg = dev->config;
@@ -336,106 +509,138 @@ int si5351_pll_soft_reset(const struct device *dev, si5351_pll_mask_t pll)
     return 0;
 }
 
-static int si5351_setup(const struct device *dev)
+int si5351_pll_set_frequency(const struct device *dev, si5351_pll_mask_t pll_mask, si5351_pll_source_t source, si5351_frequency_t frequency)
 {
-    const si5351_config_t *cfg = dev->config;
-
-    uint8_t status;
-    if (i2c_reg_read_byte_dt(&cfg->i2c, SI5351_REG_STATUS_ADR, &status))
-    {
-        LOG_ERR("Could not read from device at 0x%" PRIX16, cfg->i2c.addr);
-        return -EIO;
-    }
-
     return 0;
 }
 
-// Convert from device tree parameter to correct C representation of parameters
-static inline int parse_output_dt_parameters(si5351_output_dt_config_t const *default_config_in, si5351_output_data_t *config_out)
+int si5351_pll_set_multiplier(const struct device *dev, si5351_pll_mask_t pll_mask, si5351_ratio_t multiplier)
 {
-    config_out->output_enabled = default_config_in->output_enabled ? SI5351_OUTPUT_OUTPUT_ENABLED : SI5351_OUTPUT_OUTPUT_DISABLED;
+    return 0;
+}
 
-    config_out->powered_up = default_config_in->powered_up ? SI5351_OUTPUT_POWERED_UP : SI5351_OUTPUT_POWERED_DOWN;
+int si5351_pll_set_multiplier_abc(const struct device *dev, si5351_pll_mask_t pll_mask, uint32_t a, uint32_t b, uint32_t c)
+{
+    return 0;
+}
 
-    config_out->integer_mode = default_config_in->integer_mode ? SI5351_OUTPUT_INTEGER_MODE_ENABLED : SI5351_OUTPUT_INTEGER_MODE_DISABLED;
+int si5351_pll_set_multiplier_parameters(const struct device *dev, si5351_pll_mask_t pll_mask, si5351_pll_parameters_t parameters)
+{
+    return 0;
+}
 
-    switch (default_config_in->multisynth_source)
-    {
-    case 0:
-        config_out->multisynth_source = SI5351_OUTPUT_MULTISYNTH_SOURCE_PLLA;
-        break;
-    case 1:
-        config_out->multisynth_source = SI5351_OUTPUT_MULTISYNTH_SOURCE_PLLB;
-        break;
-    default:
-        LOG_ERR("Invalid argument: multisynth_source: %d", (int)default_config_in->multisynth_source);
-        return -EINVAL;
-    }
+int si5351_pll_set_multiplier_integer(const struct device *dev, si5351_pll_mask_t pll_mask, uint32_t multiplier)
+{
+    return 0;
+}
 
-    config_out->invert = default_config_in->invert ? SI5351_OUTPUT_INVERT_ENABLED : SI5351_OUTPUT_INVERT_DISABLED;
+int si5351_pll_set_divider_fixed(const struct device *dev, si5351_pll_mask_t pll_mask, bool is_fixed)
+{
+    return 0;
+}
 
-    switch (default_config_in->clock_source)
-    {
-    case 0:
-        config_out->clock_source = SI5351_OUTPUT_CLK_SOURCE_XTAL;
-        break;
-    case 1:
-        config_out->clock_source = SI5351_OUTPUT_CLK_SOURCE_CLKIN;
-        break;
-    case 2:
-        config_out->clock_source = SI5351_OUTPUT_CLK_SOURCE_MULTISYNTH;
-        break;
-    default:
-        LOG_ERR("Invalid argument: clock_source: %d", (int)default_config_in->clock_source);
-        return -EINVAL;
-    }
+int si5351_pll_get_frequency(const struct device *dev, si5351_pll_index_t pll_index, si5351_frequency_t *frequency)
+{
+    return 0;
+}
 
-    config_out->drive_strength = default_config_in->drive_strength;
-    config_out->p1 = default_config_in->p1;
-    config_out->p2 = default_config_in->p2;
-    config_out->p3 = default_config_in->p3;
-    config_out->r = default_config_in->r;
+int si5351_pll_get_multiplier(const struct device *dev, si5351_pll_index_t pll_index, si5351_ratio_t *multiplier)
+{
+    return 0;
+}
 
-    switch (default_config_in->r)
-    {
-    case 1:
-        config_out->r = SI5351_OUTPUT_R_1;
-        break;
-    case 2:
-        config_out->r = SI5351_OUTPUT_R_2;
-        break;
-    case 4:
-        config_out->r = SI5351_OUTPUT_R_4;
-        break;
-    case 8:
-        config_out->r = SI5351_OUTPUT_R_8;
-        break;
-    case 16:
-        config_out->r = SI5351_OUTPUT_R_16;
-        break;
-    case 32:
-        config_out->r = SI5351_OUTPUT_R_32;
-        break;
-    case 64:
-        config_out->r = SI5351_OUTPUT_R_64;
-        break;
-    case 128:
-        config_out->r = SI5351_OUTPUT_R_128;
-        break;
-    default:
-        LOG_ERR("Invalid argument: clock_source: %d", (int)default_config_in->clock_source);
-        return -EINVAL;
-    }
+bool si5351_pll_is_fixed(const struct device *dev, si5351_pll_index_t pll_index)
+{
+    return false;
+}
 
-    config_out->divide_by_four = default_config_in->divide_by_four;
+bool si5351_pll_is_locked(const struct device *dev, si5351_pll_index_t pll_index)
+{
+    return false;
+}
 
-    config_out->phase_offset = default_config_in->phase_offset;
+int si5351_output_set_source(const struct device *dev, si5351_output_mask_t output_mask, si5351_output_source_t source)
+{
+    return 0;
+}
 
+int si5351_output_set_multisynth_source(const struct device *dev, si5351_output_mask_t output_mask, si5351_output_multisynth_source_t source)
+{
+    return 0;
+}
+
+int si5351_output_set_frequency(const struct device *dev, si5351_output_mask_t output_mask, si5351_frequency_t frequency)
+{
+    return 0;
+}
+
+int si5351_output_set_divider(const struct device *dev, si5351_output_mask_t output_mask, si5351_ratio_t divider)
+{
+    return 0;
+}
+
+int si5351_output_set_divider_abc(const struct device *dev, si5351_output_mask_t output_mask, uint32_t a, uint32_t b, uint32_t c)
+{
+    return 0;
+}
+
+int si5351_output_set_divider_parameters(const struct device *dev, si5351_output_mask_t output_mask, uint32_t p1, uint32_t p2, uint32_t p3)
+{
+    return 0;
+}
+
+int si5351_output_set_divider_integer(const struct device *dev, si5351_output_mask_t output_mask, uint8_t integer)
+{
+    return 0;
+}
+
+int si5351_output_set_divider_fixed(const struct device *dev, si5351_output_mask_t output_mask, bool is_fixed)
+{
+    return 0;
+}
+
+int si5351_output_set_powered_down(const struct device *dev, si5351_output_mask_t output_mask, bool is_powered_down)
+{
+    return 0;
+}
+
+int si5351_output_set_output_enabled(const struct device *dev, si5351_output_mask_t output_mask, bool is_enabled)
+{
+    return 0;
+}
+
+int si5351_output_set_output_enable_mask(const struct device *dev, si5351_output_mask_t output_mask, bool is_masked)
+{
+    return 0;
+}
+
+int si5351_output_set_inverted(const struct device *dev, si5351_output_mask_t output_mask, bool is_inverted)
+{
+    return 0;
+}
+
+int si5351_output_set_phase_offset_ps(const struct device *dev, si5351_output_mask_t output_mask, uint32_t pico_seconds)
+{
+    return 0;
+}
+
+int si5351_output_set_phase_offset_val(const struct device *dev, si5351_output_mask_t output_mask, uint8_t val)
+{
+    return 0;
+}
+
+int si5351_output_get_frequency(const struct device *dev, si5351_output_index_t output_index, si5351_frequency_t *frequency)
+{
+    return 0;
+}
+
+int si5351_output_get_divider(const struct device *dev, si5351_output_index_t output_index, si5351_ratio_t *divider)
+{
     return 0;
 }
 
 // Registers a clock output to the si5351 driver
-// When the final clock output has been registered, this calls the device initialization
+// When the final clock output of a si5351 chip has been registered, this calls the device initialization
 static int si5351_register_output(const struct device *parent, const struct device *child)
 {
     const si5351_config_t *parent_cfg = parent->config;
@@ -444,6 +649,7 @@ static int si5351_register_output(const struct device *parent, const struct devi
     si5351_output_data_t *child_data = child->data;
 
     parent_data->outputs[child_cfg->dt_config.output_index].output_present = true;
+    parent_data->outputs[child_cfg->dt_config.output_index].clock_output_cfg = child_cfg;
     parent_data->outputs[child_cfg->dt_config.output_index].clock_output_data = child_data;
     parent_data->num_registered_clocks++;
 
@@ -451,7 +657,7 @@ static int si5351_register_output(const struct device *parent, const struct devi
     {
         // All clocks registered, perform chip initialization
         LOG_DBG("All outputs registered, performing chip initialization..");
-        si5351_write_configuration(parent);
+        si5351_reapply_configuration(parent);
     }
 
     return 0;
@@ -473,6 +679,7 @@ static int si5351_output_init(const struct device *dev)
         LOG_ERR("Invalid argument");
         return -EINVAL;
     }
+
     LOG_DBG("output_enabled: %d\r\n"
             "powered_up: %d\r\n"
             "integer_mode: %d\r\n"
@@ -485,7 +692,8 @@ static int si5351_output_init(const struct device *dev)
             "p3: %d\r\n"
             "r: %d\r\n"
             "divide_by_four: %d\r\n"
-            "phase_offset: %d",
+            "phase_offset: %d\r\n"
+            "fixed_divider: %d",
             (int)data->output_enabled,
             (int)data->powered_up,
             (int)data->integer_mode,
@@ -498,59 +706,12 @@ static int si5351_output_init(const struct device *dev)
             (int)data->p3,
             (int)data->r,
             (int)data->divide_by_four,
-            (int)data->phase_offset);
+            (int)data->phase_offset,
+            (int)data->fixed_divider);
 
     si5351_register_output(cfg->parent, dev);
 
     LOG_DBG("si5351_output_%d initialized", cfg->dt_config.output_index);
-    return 0;
-}
-
-static int si5351_parse_dt_parameters(si5351_dt_config_t const *default_config_in, si5351_data_t *config_out)
-{
-    switch (default_config_in->clkin_div)
-    {
-    case 1:
-        config_out->clkin_div = SI5351_CLKIN_DIV_1;
-        break;
-    case 2:
-        config_out->clkin_div = SI5351_CLKIN_DIV_2;
-        break;
-    case 4:
-        config_out->clkin_div = SI5351_CLKIN_DIV_4;
-        break;
-    case 8:
-        config_out->clkin_div = SI5351_CLKIN_DIV_8;
-        break;
-    default:
-        LOG_ERR("Invalid argument: clkin_div: %d", (int)default_config_in->clkin_div);
-        return -EINVAL;
-    };
-
-    switch (default_config_in->xtal_load)
-    {
-    case 6:
-        config_out->xtal_load = SI5351_XTAL_LOAD_6PF;
-        break;
-    case 8:
-        config_out->xtal_load = SI5351_XTAL_LOAD_8PF;
-        break;
-    case 10:
-        config_out->xtal_load = SI5351_XTAL_LOAD_10PF;
-        break;
-    default:
-        LOG_ERR("Invalid argument: xtal_load: %d", (int)default_config_in->xtal_load);
-        return -EINVAL;
-    };
-
-    config_out->plla.p1 = default_config_in->plla.p1;
-    config_out->plla.p2 = default_config_in->plla.p2;
-    config_out->plla.p3 = default_config_in->plla.p3;
-
-    config_out->pllb.p1 = default_config_in->pllb.p1;
-    config_out->pllb.p2 = default_config_in->pllb.p2;
-    config_out->pllb.p3 = default_config_in->pllb.p3;
-
     return 0;
 }
 
@@ -568,9 +729,10 @@ static int si5351_init(const struct device *dev)
         return -ENODEV;
     }
 
-    if (si5351_setup(dev) < 0)
+    si5351_status_t status;
+    if (si5351_get_status(dev, &status))
     {
-        LOG_ERR("Failed to setup device!");
+        LOG_ERR("Failed to setup device at 0x%" PRIX16, cfg->i2c.addr);
         return -EIO;
     }
 
