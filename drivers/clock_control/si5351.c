@@ -6,13 +6,13 @@
 
 #define DT_DRV_COMPAT skyworks_si5351
 
+#include "si5351.h"
+
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/clock_control/si5351.h>
 #include <zephyr/kernel.h>
 #include <string.h>
-
-#include "si5351.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(clock_control_si5351, CONFIG_CLOCK_CONTROL_LOG_LEVEL);
@@ -48,32 +48,32 @@ int si5351_tune_pll(const struct device *dev, si5351_pll_mask_t pll_mask, si5351
     uint8_t i2c_burst_buffer[SI5351_REG_PLL_X_SIZE * 2];
 
     // Set PLL multisynth settings
-    if (pll_mask & si5351_pll_mask_a)
+    if (pll_mask & SI5351_PLL_MASK_A)
     {
-        memcpy(&data->current_parameters.plla, parameters, sizeof(si5351_pll_parameters_t));
+        memcpy(&data->plla, parameters, sizeof(si5351_pll_parameters_t));
     }
-    if (pll_mask & si5351_pll_mask_b)
+    if (pll_mask & SI5351_PLL_MASK_B)
     {
-        memcpy(&data->current_parameters.pllb, parameters, sizeof(si5351_pll_parameters_t));
+        memcpy(&data->pllb, parameters, sizeof(si5351_pll_parameters_t));
     }
 
-    i2c_burst_buffer[SI5351_REG_PLL_X_P3M_OFFSET] = (data->current_parameters.plla.p3 & 0x00ff00) >> 8;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P3L_OFFSET] = (data->current_parameters.plla.p3 & 0x0000ff) >> 0;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P1H_OFFSET] = (data->current_parameters.plla.p1 & 0x030000) >> 16;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P1M_OFFSET] = (data->current_parameters.plla.p1 & 0x00ff00) >> 8;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P1L_OFFSET] = (data->current_parameters.plla.p1 & 0x0000ff) >> 0;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P3HP2H_OFFSET] = (data->current_parameters.plla.p3 & 0x0f0000) >> (16 - 4) | (data->current_parameters.plla.p2 & 0x0f0000) >> 16;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P2M_OFFSET] = (data->current_parameters.plla.p2 & 0x00ff00) >> 8;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P2L_OFFSET] = (data->current_parameters.plla.p2 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P3M_OFFSET] = (data->plla.p3 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P3L_OFFSET] = (data->plla.p3 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P1H_OFFSET] = (data->plla.p1 & 0x030000) >> 16;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P1M_OFFSET] = (data->plla.p1 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P1L_OFFSET] = (data->plla.p1 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P3HP2H_OFFSET] = (data->plla.p3 & 0x0f0000) >> (16 - 4) | (data->plla.p2 & 0x0f0000) >> 16;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P2M_OFFSET] = (data->plla.p2 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P2L_OFFSET] = (data->plla.p2 & 0x0000ff) >> 0;
 
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3M_OFFSET] = (data->current_parameters.pllb.p3 & 0x00ff00) >> 8;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3L_OFFSET] = (data->current_parameters.pllb.p3 & 0x0000ff) >> 0;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1H_OFFSET] = (data->current_parameters.pllb.p1 & 0x030000) >> 16;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1M_OFFSET] = (data->current_parameters.pllb.p1 & 0x00ff00) >> 8;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1L_OFFSET] = (data->current_parameters.pllb.p1 & 0x0000ff) >> 0;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3HP2H_OFFSET] = (data->current_parameters.pllb.p3 & 0x0f0000) >> (16 - 4) | (data->current_parameters.pllb.p2 & 0x0f0000) >> 16;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P2M_OFFSET] = (data->current_parameters.pllb.p2 & 0x00ff00) >> 8;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P2L_OFFSET] = (data->current_parameters.pllb.p2 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3M_OFFSET] = (data->pllb.p3 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3L_OFFSET] = (data->pllb.p3 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1H_OFFSET] = (data->pllb.p1 & 0x030000) >> 16;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1M_OFFSET] = (data->pllb.p1 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1L_OFFSET] = (data->pllb.p1 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3HP2H_OFFSET] = (data->pllb.p3 & 0x0f0000) >> (16 - 4) | (data->pllb.p2 & 0x0f0000) >> 16;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P2M_OFFSET] = (data->pllb.p2 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P2L_OFFSET] = (data->pllb.p2 & 0x0000ff) >> 0;
 
     if (i2c_burst_write_dt(i2c, SI5351_REG_PLL_X_ADR_BASE, i2c_burst_buffer, SI5351_REG_PLL_X_SIZE * 2))
     {
@@ -89,7 +89,7 @@ static int si5351_write_oeb(const struct device *dev)
     si5351_config_t const *cfg = dev->config;
     si5351_data_t *data = dev->data;
     struct i2c_dt_spec const *i2c = &cfg->i2c;
-    si5351_output_parameters_t const *clock_parameters;
+    si5351_output_data_t const *clock_data;
 
     // Update OEB register
     uint8_t oeb_register = 0x00;
@@ -101,9 +101,9 @@ static int si5351_write_oeb(const struct device *dev)
             oeb_register |= 1 << i;
             continue;
         }
-        clock_parameters = data->outputs[i].current_parameters;
+        clock_data = data->outputs[i].clock_output_data;
 
-        oeb_register |= clock_parameters->output_enabled << i;
+        oeb_register |= clock_data->output_enabled << i;
     }
     if (i2c_reg_write_byte_dt(i2c, SI5351_REG_OEB_ADR, oeb_register))
     {
@@ -130,7 +130,7 @@ int si5351_set_output(const struct device *dev, uint8_t output_index, si5351_out
         return -ENODEV;
     }
 
-    data->outputs[output_index].current_parameters->output_enabled = state;
+    data->outputs[output_index].clock_output_data->output_enabled = state;
 
     return si5351_write_oeb(dev);
 }
@@ -193,9 +193,9 @@ static int si5351_write_configuration(const struct device *dev)
     }
 
     // Set PLL settings
-    uint8_t pll_cfg = data->current_parameters.clkin_div << 6 |
-                      data->current_parameters.pllb.clock_source << 3 |
-                      data->current_parameters.plla.clock_source << 2;
+    uint8_t pll_cfg = data->clkin_div << 6 |
+                      data->pllb.clock_source << 3 |
+                      data->plla.clock_source << 2;
     if (i2c_reg_write_byte_dt(i2c, SI5351_REG_PLL_CFG_ADR, pll_cfg))
     {
         LOG_ERR("Could not write to device");
@@ -203,7 +203,7 @@ static int si5351_write_configuration(const struct device *dev)
     }
 
     // Set the XTAL load
-    uint8_t xtal_load = data->current_parameters.xtal_load << 6 | 0x12; // Magic given from AN619
+    uint8_t xtal_load = data->xtal_load << 6 | 0x12; // Magic given from AN619
     if (i2c_reg_write_byte_dt(i2c, SI5351_REG_XTAL_LOAD_ADR, xtal_load))
     {
         LOG_ERR("Could not write to device");
@@ -211,7 +211,7 @@ static int si5351_write_configuration(const struct device *dev)
     }
 
     // === Set clock output specific settings ===
-    si5351_output_parameters_t const *clock_parameters;
+    si5351_output_data_t const *clock_output_data;
 
     // Set clock output phase offsets, only supported for the first 6 clock outputs
     for (int i = 0; i < 6; i++)
@@ -221,9 +221,9 @@ static int si5351_write_configuration(const struct device *dev)
             memset(&i2c_burst_buffer[i * SI5351_REG_CLK_OUT_PHASE_OFFSET_X_SIZE], 0, SI5351_REG_CLK_OUT_PHASE_OFFSET_X_SIZE);
             continue;
         }
-        clock_parameters = data->outputs[i].current_parameters;
+        clock_output_data = data->outputs[i].clock_output_data;
 
-        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_PHASE_OFFSET_X_SIZE] = clock_parameters->phase_offset;
+        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_PHASE_OFFSET_X_SIZE] = clock_output_data->phase_offset;
     }
     if (i2c_burst_write_dt(i2c, SI5351_REG_CLK_OUT_PHASE_OFFSET_X_ADR_BASE, i2c_burst_buffer, 6 * SI5351_REG_CLK_OUT_PHASE_OFFSET_X_SIZE))
     {
@@ -239,16 +239,16 @@ static int si5351_write_configuration(const struct device *dev)
             memset(&i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE], 0, SI5351_REG_CLK_OUT_X_SIZE);
             continue;
         }
-        clock_parameters = data->outputs[i].current_parameters;
+        clock_output_data = data->outputs[i].clock_output_data;
 
-        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P3M_OFFSET] = (clock_parameters->p3 & 0x00ff00) >> 8;
-        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P3L_OFFSET] = (clock_parameters->p3 & 0x0000ff) >> 0;
-        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P1H_OFFSET] = clock_parameters->r << 4 | (clock_parameters->divide_by_four ? 0x3 : 0x0) << 2 | (clock_parameters->p1 & 0x030000) >> 16;
-        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P1M_OFFSET] = (clock_parameters->p1 & 0x00ff00) >> 8;
-        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P1L_OFFSET] = (clock_parameters->p1 & 0x0000ff) >> 0;
-        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P3HP2H_OFFSET] = (clock_parameters->p3 & 0x0f0000) >> (16 - 4) | (clock_parameters->p2 & 0x0f0000) >> 16;
-        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P2M_OFFSET] = (clock_parameters->p2 & 0x00ff00) >> 8;
-        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P2L_OFFSET] = (clock_parameters->p2 & 0x0000ff) >> 0;
+        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P3M_OFFSET] = (clock_output_data->p3 & 0x00ff00) >> 8;
+        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P3L_OFFSET] = (clock_output_data->p3 & 0x0000ff) >> 0;
+        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P1H_OFFSET] = clock_output_data->r << 4 | (clock_output_data->divide_by_four ? 0x3 : 0x0) << 2 | (clock_output_data->p1 & 0x030000) >> 16;
+        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P1M_OFFSET] = (clock_output_data->p1 & 0x00ff00) >> 8;
+        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P1L_OFFSET] = (clock_output_data->p1 & 0x0000ff) >> 0;
+        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P3HP2H_OFFSET] = (clock_output_data->p3 & 0x0f0000) >> (16 - 4) | (clock_output_data->p2 & 0x0f0000) >> 16;
+        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P2M_OFFSET] = (clock_output_data->p2 & 0x00ff00) >> 8;
+        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_X_SIZE + SI5351_REG_CLK_OUT_X_P2L_OFFSET] = (clock_output_data->p2 & 0x0000ff) >> 0;
     }
     if (i2c_burst_write_dt(i2c, SI5351_REG_CLK_OUT_X_ADR_BASE, i2c_burst_buffer, 8 * SI5351_REG_CLK_OUT_X_SIZE))
     {
@@ -264,14 +264,14 @@ static int si5351_write_configuration(const struct device *dev)
             memset(&i2c_burst_buffer[i * SI5351_REG_CLK_OUT_CTRL_SIZE], 0, SI5351_REG_CLK_OUT_CTRL_SIZE);
             continue;
         }
-        clock_parameters = data->outputs[i].current_parameters;
+        clock_output_data = data->outputs[i].clock_output_data;
 
-        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_CTRL_SIZE] = clock_parameters->powered_up << 7 |
-                                                             clock_parameters->integer_mode << 6 |
-                                                             clock_parameters->multisynth_source << 5 |
-                                                             clock_parameters->invert << 4 |
-                                                             clock_parameters->clock_source << 2 |
-                                                             clock_parameters->drive_strength << 0;
+        i2c_burst_buffer[i * SI5351_REG_CLK_OUT_CTRL_SIZE] = clock_output_data->powered_up << 7 |
+                                                             clock_output_data->integer_mode << 6 |
+                                                             clock_output_data->multisynth_source << 5 |
+                                                             clock_output_data->invert << 4 |
+                                                             clock_output_data->clock_source << 2 |
+                                                             clock_output_data->drive_strength << 0;
     }
     if (i2c_burst_write_dt(i2c, SI5351_REG_CLK_OUT_CTRL_ADR_BASE, i2c_burst_buffer, 8 * SI5351_REG_CLK_OUT_CTRL_SIZE))
     {
@@ -280,23 +280,23 @@ static int si5351_write_configuration(const struct device *dev)
     }
 
     // Set PLL multisynth settings
-    i2c_burst_buffer[SI5351_REG_PLL_X_P3M_OFFSET] = (data->current_parameters.plla.p3 & 0x00ff00) >> 8;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P3L_OFFSET] = (data->current_parameters.plla.p3 & 0x0000ff) >> 0;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P1H_OFFSET] = (data->current_parameters.plla.p1 & 0x030000) >> 16;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P1M_OFFSET] = (data->current_parameters.plla.p1 & 0x00ff00) >> 8;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P1L_OFFSET] = (data->current_parameters.plla.p1 & 0x0000ff) >> 0;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P3HP2H_OFFSET] = (data->current_parameters.plla.p3 & 0x0f0000) >> (16 - 4) | (data->current_parameters.plla.p2 & 0x0f0000) >> 16;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P2M_OFFSET] = (data->current_parameters.plla.p2 & 0x00ff00) >> 8;
-    i2c_burst_buffer[SI5351_REG_PLL_X_P2L_OFFSET] = (data->current_parameters.plla.p2 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P3M_OFFSET] = (data->plla.p3 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P3L_OFFSET] = (data->plla.p3 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P1H_OFFSET] = (data->plla.p1 & 0x030000) >> 16;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P1M_OFFSET] = (data->plla.p1 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P1L_OFFSET] = (data->plla.p1 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P3HP2H_OFFSET] = (data->plla.p3 & 0x0f0000) >> (16 - 4) | (data->plla.p2 & 0x0f0000) >> 16;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P2M_OFFSET] = (data->plla.p2 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_P2L_OFFSET] = (data->plla.p2 & 0x0000ff) >> 0;
 
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3M_OFFSET] = (data->current_parameters.pllb.p3 & 0x00ff00) >> 8;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3L_OFFSET] = (data->current_parameters.pllb.p3 & 0x0000ff) >> 0;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1H_OFFSET] = (data->current_parameters.pllb.p1 & 0x030000) >> 16;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1M_OFFSET] = (data->current_parameters.pllb.p1 & 0x00ff00) >> 8;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1L_OFFSET] = (data->current_parameters.pllb.p1 & 0x0000ff) >> 0;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3HP2H_OFFSET] = (data->current_parameters.pllb.p3 & 0x0f0000) >> (16 - 4) | (data->current_parameters.pllb.p2 & 0x0f0000) >> 16;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P2M_OFFSET] = (data->current_parameters.pllb.p2 & 0x00ff00) >> 8;
-    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P2L_OFFSET] = (data->current_parameters.pllb.p2 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3M_OFFSET] = (data->pllb.p3 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3L_OFFSET] = (data->pllb.p3 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1H_OFFSET] = (data->pllb.p1 & 0x030000) >> 16;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1M_OFFSET] = (data->pllb.p1 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P1L_OFFSET] = (data->pllb.p1 & 0x0000ff) >> 0;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P3HP2H_OFFSET] = (data->pllb.p3 & 0x0f0000) >> (16 - 4) | (data->pllb.p2 & 0x0f0000) >> 16;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P2M_OFFSET] = (data->pllb.p2 & 0x00ff00) >> 8;
+    i2c_burst_buffer[SI5351_REG_PLL_X_SIZE + SI5351_REG_PLL_X_P2L_OFFSET] = (data->pllb.p2 & 0x0000ff) >> 0;
 
     if (i2c_burst_write_dt(i2c, SI5351_REG_PLL_X_ADR_BASE, i2c_burst_buffer, SI5351_REG_PLL_X_SIZE * 2))
     {
@@ -305,7 +305,7 @@ static int si5351_write_configuration(const struct device *dev)
     }
 
     // Reset PLLs
-    if (si5351_pll_soft_reset(dev, si5351_pll_mask_a | si5351_pll_mask_b))
+    if (si5351_pll_soft_reset(dev, SI5351_PLL_MASK_A | SI5351_PLL_MASK_B))
     {
         return -EIO;
     }
@@ -319,72 +319,20 @@ static int si5351_write_configuration(const struct device *dev)
     return 0;
 }
 
-int si5351_get_parameters(const struct device *dev, si5351_parameters_t *parameters)
-{
-    return 0;
-}
-
-int si5351_set_parameters(const struct device *dev, si5351_parameters_t const *parameters)
-{
-    si5351_data_t *data = dev->data;
-
-    memcpy(&data->current_parameters, parameters, sizeof(si5351_parameters_t));
-
-    return 0;
-}
-
 int si5351_pll_soft_reset(const struct device *dev, si5351_pll_mask_t pll)
 {
     si5351_config_t const *cfg = dev->config;
     struct i2c_dt_spec const *i2c = &cfg->i2c;
 
     uint8_t pll_reset_register = 0;
-    pll_reset_register |= (pll & si5351_pll_mask_b) ? 0x80 : 0x00;
-    pll_reset_register |= (pll & si5351_pll_mask_a) ? 0x20 : 0x00;
+    pll_reset_register |= (pll & SI5351_PLL_MASK_B) ? 0x80 : 0x00;
+    pll_reset_register |= (pll & SI5351_PLL_MASK_A) ? 0x20 : 0x00;
 
     if (i2c_reg_write_byte_dt(i2c, SI5351_REG_PLL_RESET_ADR, pll_reset_register))
     {
         LOG_ERR("Could not write to device");
         return -EIO;
     }
-    return 0;
-}
-
-int si5351_output_get_parameters(const struct device *dev, si5351_output_parameters_t *parameters)
-{
-    return 0;
-}
-
-int si5351_output_set_parameters(const struct device *dev, si5351_output_parameters_t const *parameters)
-{
-    si5351_output_data_t *data = dev->data;
-
-    memcpy(&data->current_parameters, parameters, sizeof(si5351_output_parameters_t));
-
-    return 0;
-}
-
-static int si5351_output_on(const struct device *dev, clock_control_subsys_t subsys)
-{
-    const si5351_output_config_t *cfg = dev->config;
-    si5351_output_data_t *data = dev->data;
-    LOG_DBG("SI5351_on entered");
-
-    data->current_parameters.output_enabled = si5351_output_output_enabled;
-
-    si5351_write_oeb(cfg->parent);
-    return 0;
-}
-
-static int si5351_output_off(const struct device *dev, clock_control_subsys_t subsys)
-{
-    const si5351_output_config_t *cfg = dev->config;
-    si5351_output_data_t *data = dev->data;
-    LOG_DBG("SI5351_off entered");
-
-    data->current_parameters.output_enabled = si5351_output_output_disabled;
-
-    si5351_write_oeb(cfg->parent);
     return 0;
 }
 
@@ -403,39 +351,39 @@ static int si5351_setup(const struct device *dev)
 }
 
 // Convert from device tree parameter to correct C representation of parameters
-static inline int parse_output_dt_parameters(si5351_output_dt_config_t const *default_config_in, si5351_output_parameters_t *config_out)
+static inline int parse_output_dt_parameters(si5351_output_dt_config_t const *default_config_in, si5351_output_data_t *config_out)
 {
-    config_out->output_enabled = default_config_in->output_enabled ? si5351_output_output_enabled : si5351_output_output_disabled;
+    config_out->output_enabled = default_config_in->output_enabled ? SI5351_OUTPUT_OUTPUT_ENABLED : SI5351_OUTPUT_OUTPUT_DISABLED;
 
-    config_out->powered_up = default_config_in->powered_up ? si5351_output_powered_up : si5351_output_powered_down;
+    config_out->powered_up = default_config_in->powered_up ? SI5351_OUTPUT_POWERED_UP : SI5351_OUTPUT_POWERED_DOWN;
 
-    config_out->integer_mode = default_config_in->integer_mode ? si5351_output_integer_mode_enabled : si5351_output_integer_mode_disabled;
+    config_out->integer_mode = default_config_in->integer_mode ? SI5351_OUTPUT_INTEGER_MODE_ENABLED : SI5351_OUTPUT_INTEGER_MODE_DISABLED;
 
     switch (default_config_in->multisynth_source)
     {
     case 0:
-        config_out->multisynth_source = si5351_output_multisynth_source_plla;
+        config_out->multisynth_source = SI5351_OUTPUT_MULTISYNTH_SOURCE_PLLA;
         break;
     case 1:
-        config_out->multisynth_source = si5351_output_multisynth_source_pllb;
+        config_out->multisynth_source = SI5351_OUTPUT_MULTISYNTH_SOURCE_PLLB;
         break;
     default:
         LOG_ERR("Invalid argument: multisynth_source: %d", (int)default_config_in->multisynth_source);
         return -EINVAL;
     }
 
-    config_out->invert = default_config_in->invert ? si5351_output_invert_enabled : si5351_output_invert_disabled;
+    config_out->invert = default_config_in->invert ? SI5351_OUTPUT_INVERT_ENABLED : SI5351_OUTPUT_INVERT_DISABLED;
 
     switch (default_config_in->clock_source)
     {
     case 0:
-        config_out->clock_source = si5351_output_clk_source_xtal;
+        config_out->clock_source = SI5351_OUTPUT_CLK_SOURCE_XTAL;
         break;
     case 1:
-        config_out->clock_source = si5351_output_clk_source_clkin;
+        config_out->clock_source = SI5351_OUTPUT_CLK_SOURCE_CLKIN;
         break;
     case 2:
-        config_out->clock_source = si5351_output_clk_source_multisynth;
+        config_out->clock_source = SI5351_OUTPUT_CLK_SOURCE_MULTISYNTH;
         break;
     default:
         LOG_ERR("Invalid argument: clock_source: %d", (int)default_config_in->clock_source);
@@ -490,16 +438,16 @@ static inline int parse_output_dt_parameters(si5351_output_dt_config_t const *de
 // When the final clock output has been registered, this calls the device initialization
 static int si5351_register_output(const struct device *parent, const struct device *child)
 {
-    const si5351_config_t *cfg = parent->config;
-    const si5351_output_config_t *clock_cfg = child->config;
+    const si5351_config_t *parent_cfg = parent->config;
+    si5351_data_t *parent_data = parent->data;
+    const si5351_output_config_t *child_cfg = child->config;
+    si5351_output_data_t *child_data = child->data;
 
-    si5351_data_t *data = parent->data;
+    parent_data->outputs[child_cfg->dt_config.output_index].output_present = true;
+    parent_data->outputs[child_cfg->dt_config.output_index].clock_output_data = child_data;
+    parent_data->num_registered_clocks++;
 
-    data->outputs[clock_cfg->output_index].output_present = true;
-    data->outputs[clock_cfg->output_index].current_parameters = child->data;
-    data->num_registered_clocks++;
-
-    if (data->num_registered_clocks == cfg->num_okay_clocks)
+    if (parent_data->num_registered_clocks == parent_cfg->num_okay_clocks)
     {
         // All clocks registered, perform chip initialization
         LOG_DBG("All outputs registered, performing chip initialization..");
@@ -520,7 +468,7 @@ static int si5351_output_init(const struct device *dev)
         return -ENODEV;
     }
 
-    if (parse_output_dt_parameters(&cfg->dt_config, &data->current_parameters) < 0)
+    if (parse_output_dt_parameters(&cfg->dt_config, data) < 0)
     {
         LOG_ERR("Invalid argument");
         return -EINVAL;
@@ -538,41 +486,41 @@ static int si5351_output_init(const struct device *dev)
             "r: %d\r\n"
             "divide_by_four: %d\r\n"
             "phase_offset: %d",
-            (int)data->current_parameters.output_enabled,
-            (int)data->current_parameters.powered_up,
-            (int)data->current_parameters.integer_mode,
-            (int)data->current_parameters.multisynth_source,
-            (int)data->current_parameters.invert,
-            (int)data->current_parameters.clock_source,
-            (int)data->current_parameters.drive_strength,
-            (int)data->current_parameters.p1,
-            (int)data->current_parameters.p2,
-            (int)data->current_parameters.p3,
-            (int)data->current_parameters.r,
-            (int)data->current_parameters.divide_by_four,
-            (int)data->current_parameters.phase_offset);
+            (int)data->output_enabled,
+            (int)data->powered_up,
+            (int)data->integer_mode,
+            (int)data->multisynth_source,
+            (int)data->invert,
+            (int)data->clock_source,
+            (int)data->drive_strength,
+            (int)data->p1,
+            (int)data->p2,
+            (int)data->p3,
+            (int)data->r,
+            (int)data->divide_by_four,
+            (int)data->phase_offset);
 
     si5351_register_output(cfg->parent, dev);
 
-    LOG_DBG("si5351_output_%d initialized", cfg->output_index);
+    LOG_DBG("si5351_output_%d initialized", cfg->dt_config.output_index);
     return 0;
 }
 
-static int si5351_parse_dt_parameters(si5351_dt_config_t const *default_config_in, si5351_parameters_t *config_out)
+static int si5351_parse_dt_parameters(si5351_dt_config_t const *default_config_in, si5351_data_t *config_out)
 {
     switch (default_config_in->clkin_div)
     {
     case 1:
-        config_out->clkin_div = si5351_clkin_div_1;
+        config_out->clkin_div = SI5351_CLKIN_DIV_1;
         break;
     case 2:
-        config_out->clkin_div = si5351_clkin_div_2;
+        config_out->clkin_div = SI5351_CLKIN_DIV_2;
         break;
     case 4:
-        config_out->clkin_div = si5351_clkin_div_4;
+        config_out->clkin_div = SI5351_CLKIN_DIV_4;
         break;
     case 8:
-        config_out->clkin_div = si5351_clkin_div_8;
+        config_out->clkin_div = SI5351_CLKIN_DIV_8;
         break;
     default:
         LOG_ERR("Invalid argument: clkin_div: %d", (int)default_config_in->clkin_div);
@@ -582,13 +530,13 @@ static int si5351_parse_dt_parameters(si5351_dt_config_t const *default_config_i
     switch (default_config_in->xtal_load)
     {
     case 6:
-        config_out->xtal_load = si5351_xtal_load_6pf;
+        config_out->xtal_load = SI5351_XTAL_LOAD_6PF;
         break;
     case 8:
-        config_out->xtal_load = si5351_xtal_load_8pf;
+        config_out->xtal_load = SI5351_XTAL_LOAD_8PF;
         break;
     case 10:
-        config_out->xtal_load = si5351_xtal_load_10pf;
+        config_out->xtal_load = SI5351_XTAL_LOAD_10PF;
         break;
     default:
         LOG_ERR("Invalid argument: xtal_load: %d", (int)default_config_in->xtal_load);
@@ -626,7 +574,7 @@ static int si5351_init(const struct device *dev)
         return -EIO;
     }
 
-    si5351_parse_dt_parameters(&cfg->dt_config, &data->current_parameters);
+    si5351_parse_dt_parameters(&cfg->dt_config, data);
 
     LOG_DBG("clkin_div: %d\r\n"
             "xtal_load: %d\r\n"
@@ -638,22 +586,49 @@ static int si5351_init(const struct device *dev)
             "pllb.p1: %d\r\n"
             "pllb.p2: %d\r\n"
             "pllb.p3: %d\r\n",
-            (int)data->current_parameters.clkin_div,
-            (int)data->current_parameters.xtal_load,
-            (int)data->current_parameters.plla.clock_source,
-            (int)data->current_parameters.plla.p1,
-            (int)data->current_parameters.plla.p2,
-            (int)data->current_parameters.plla.p3,
-            (int)data->current_parameters.pllb.clock_source,
-            (int)data->current_parameters.pllb.p1,
-            (int)data->current_parameters.pllb.p2,
-            (int)data->current_parameters.pllb.p3);
+            (int)data->clkin_div,
+            (int)data->xtal_load,
+            (int)data->plla.clock_source,
+            (int)data->plla.p1,
+            (int)data->plla.p2,
+            (int)data->plla.p3,
+            (int)data->pllb.clock_source,
+            (int)data->pllb.p1,
+            (int)data->pllb.p2,
+            (int)data->pllb.p3);
 
     LOG_DBG("si5351 driver loaded for device at 0x%" PRIX16, cfg->i2c.addr);
 
     return 0;
 }
 
+// ====== Clock Control API Functions begin ======
+static int si5351_output_on(const struct device *dev, clock_control_subsys_t subsys)
+{
+    const si5351_output_config_t *cfg = dev->config;
+    si5351_output_data_t *data = dev->data;
+    LOG_DBG("SI5351_on entered");
+
+    data->output_enabled = SI5351_OUTPUT_OUTPUT_ENABLED;
+
+    si5351_write_oeb(cfg->parent);
+    return 0;
+}
+
+static int si5351_output_off(const struct device *dev, clock_control_subsys_t subsys)
+{
+    const si5351_output_config_t *cfg = dev->config;
+    si5351_output_data_t *data = dev->data;
+    LOG_DBG("SI5351_off entered");
+
+    data->output_enabled = SI5351_OUTPUT_OUTPUT_DISABLED;
+
+    si5351_write_oeb(cfg->parent);
+    return 0;
+}
+// ====== Clock Control API Functions end ======
+
+// Clock control API structure
 static DEVICE_API(clock_control, si5351_output_driver_api) = {
     .on = si5351_output_on,
     .off = si5351_output_off,
@@ -690,6 +665,9 @@ static DEVICE_API(clock_control, si5351_output_driver_api) = {
                                DT_NODE_HAS_PROPS_2, \
                                DT_NODE_HAS_PROP)(node_id, __VA_ARGS__)
 
+#define DT_INST_NODE_HAS_PROPS(inst, ...) \
+    DT_NODE_HAS_PROPS(DT_DRV_INST(inst), __VA_ARGS__)
+
 #define UNPACK_GROUP_IMPL(...) __VA_ARGS__
 #define UNPACK_GROUP(args) UNPACK_GROUP_IMPL args
 
@@ -700,60 +678,55 @@ static DEVICE_API(clock_control, si5351_output_driver_api) = {
 #define DT_INST_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(inst, a, b) \
     DT_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(DT_DRV_INST(inst), a, b)
 
-/*
-#define MUTUALLY_EXCLUSIVE_PROPERTIES(node_id, prop1, prop2)                              \
-BUILD_ASSERT(!(DT_NODE_HAS_PROP(node_id, prop1) && DT_NODE_HAS_PROP(node_id, prop2)), \
-             "DT error: si5351 cannot have both " #prop1 " and " #prop2 " set")
-
-#define INST_MUTUALLY_EXCLUSIVE_PROPERTIES(inst, prop1, prop2) \
-MUTUALLY_EXCLUSIVE_PROPERTIES(DT_DRV_INST(inst), prop1, prop2)
-
-#define MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(node_id, propA1, propA2, propA3, propB1, propB2, propB3) \
-BUILD_ASSERT(                                                                                   \
-    !(                                                                                          \
-        (DT_NODE_HAS_PROP(node_id, propA1) ||                                                   \
-         DT_NODE_HAS_PROP(node_id, propA2) ||                                                   \
-         DT_NODE_HAS_PROP(node_id, propA3)) &&                                                  \
-        (DT_NODE_HAS_PROP(node_id, propB1) ||                                                   \
-         DT_NODE_HAS_PROP(node_id, propB2) ||                                                   \
-         DT_NODE_HAS_PROP(node_id, propB3))),                                                   \
-    "DT error: Properties from groupA (" #propA1 ", " #propA2 ", " #propA3 ") and groupB (" #propB1 ", " #propB2 ", " #propB3 ") cannot be set together")
-
-#define INST_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(inst, propA1, propA2, propA3, propB1, propB2, propB3) \
-MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(DT_DRV_INST(inst), propA1, propA2, propA3, propB1, propB2, propB3)
-*/
-
 // Macro called once per clock output defined in the device tree
 // This parses the options given in the device tree and assigns them to the
 // dt_config struct. The output_init function will copy this to the
 // data->current_config during runtime initialization
-#define SI5351_OUTPUT_INIT(child_node_id)                                                                     \
-    static si5351_output_data_t si5351_output_data##child_node_id;                                            \
-    static const si5351_output_config_t si5351_output_config##child_node_id = {                               \
-        .parent = DEVICE_DT_GET(DT_PARENT(child_node_id)),                                                    \
-        .output_index = DT_REG_ADDR(child_node_id),                                                           \
-        .dt_config = {                                                                                        \
-            .output_enabled = DT_PROP(child_node_id, output_enabled),                                         \
-            .powered_up = DT_PROP(child_node_id, powered_up),                                                 \
-            .integer_mode = DT_PROP(child_node_id, integer_mode),                                             \
-            .multisynth_source = DT_ENUM_IDX(child_node_id, multisynth_source),                               \
-            .invert = DT_PROP(child_node_id, invert),                                                         \
-            .clock_source = DT_ENUM_IDX(child_node_id, clock_source),                                         \
-            .drive_strength = DT_PROP(child_node_id, drive_strength),                                         \
-            .p1 = DT_PROP_OR(child_node_id, p1, 0),                                                           \
-            .p2 = DT_PROP_OR(child_node_id, p2, 0),                                                           \
-            .p3 = DT_PROP_OR(child_node_id, p3, 0),                                                           \
-            .r = DT_PROP_OR(child_node_id, r, 0),                                                             \
-            .divide_by_four = DT_PROP(child_node_id, divide_by_four),                                         \
-            .phase_offset = DT_PROP(child_node_id, phase_offset),                                             \
-        },                                                                                                    \
-    };                                                                                                        \
-    DT_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(child_node_id, (frequency, frequency_fractional), (a, b, v));       \
-    DT_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(child_node_id, (frequency, frequency_fractional), (p1, p2, p3, r)); \
-    DT_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(child_node_id, (a, b, c), (p1, p2, p3, r));                         \
-    DEVICE_DT_DEFINE(child_node_id, &si5351_output_init, NULL,                                                \
-                     &si5351_output_data##child_node_id,                                                      \
-                     &si5351_output_config##child_node_id, POST_KERNEL,                                       \
+#define SI5351_OUTPUT_INIT(child_node_id)                                                                                     \
+    static si5351_output_data_t si5351_output_data##child_node_id;                                                            \
+    static const si5351_output_config_t si5351_output_config##child_node_id = {                                               \
+        .parent = DEVICE_DT_GET(DT_PARENT(child_node_id)),                                                                    \
+        .dt_config = {                                                                                                        \
+            .output_index = DT_REG_ADDR(child_node_id),                                                                       \
+            .output_enabled = DT_PROP(child_node_id, output_enabled),                                                         \
+            .powered_up = DT_PROP(child_node_id, powered_up),                                                                 \
+            .integer_mode = DT_PROP(child_node_id, integer_mode),                                                             \
+            .clock_source = DT_ENUM_IDX(child_node_id, clock_source),                                                         \
+            .multisynth_source = DT_ENUM_IDX(child_node_id, multisynth_source),                                               \
+            .drive_strength = DT_PROP(child_node_id, drive_strength),                                                         \
+            .invert = DT_PROP(child_node_id, invert),                                                                         \
+            .fixed_divider = DT_PROP(child_node_id, fixed_divider),                                                           \
+                                                                                                                              \
+            .using_frequency = DT_NODE_HAS_PROPS(inst, frequency, frequency_fractional),                                      \
+            .frequency = DT_PROP_OR(inst, frequency, 0),                                                                      \
+            .frequency_fractional = DT_PROP_OR(inst, frequency_fractional, 0),                                                \
+                                                                                                                              \
+            .using_multiplier = DT_NODE_HAS_PROPS(inst, a, b, c),                                                             \
+            .a = DT_PROP_OR(inst, a, 0),                                                                                      \
+            .b = DT_PROP_OR(inst, b, 0),                                                                                      \
+            .c = DT_PROP_OR(inst, c, 0),                                                                                      \
+                                                                                                                              \
+            .using_multiplier_parameters = DT_NODE_HAS_PROPS(child_node_id, p1, p2, p3, r, divide_by_four),                   \
+            .p1 = DT_PROP_OR(child_node_id, p1, 0),                                                                           \
+            .p2 = DT_PROP_OR(child_node_id, p2, 0),                                                                           \
+            .p3 = DT_PROP_OR(child_node_id, p3, 0),                                                                           \
+            .r = DT_PROP_OR(child_node_id, r, 0),                                                                             \
+            .divide_by_four = DT_PROP(child_node_id, divide_by_four),                                                         \
+                                                                                                                              \
+            .using_phase_offset = DT_NODE_HAS_PROP(child_node_id, phase_offset),                                              \
+            .phase_offset = DT_PROP_OR(child_node_id, phase_offset, 0),                                                       \
+                                                                                                                              \
+            .using_phase_offset_ps = DT_NODE_HAS_PROP(child_node_id, phase_offset_ps),                                        \
+            .phase_offset_ps = DT_PROP_OR(child_node_id, phase_offset_ps, 0),                                                 \
+        },                                                                                                                    \
+    };                                                                                                                        \
+    DT_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(child_node_id, (frequency, frequency_fractional), (a, b, v));                       \
+    DT_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(child_node_id, (frequency, frequency_fractional), (p1, p2, p3, r, divide_by_four)); \
+    DT_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(child_node_id, (a, b, c), (p1, p2, p3, r, divide_by_four));                         \
+    DT_MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(child_node_id, (phase_offset), (phase_offset_ps));                                  \
+    DEVICE_DT_DEFINE(child_node_id, &si5351_output_init, NULL,                                                                \
+                     &si5351_output_data##child_node_id,                                                                      \
+                     &si5351_output_config##child_node_id, POST_KERNEL,                                                       \
                      SI5351_INIT_PRIORITY, &si5351_output_driver_api)
 
 // Macro, called once per si5351 instance
@@ -765,19 +738,50 @@ MUTUALLY_EXCLUSIVE_PROPERTY_GROUPS(DT_DRV_INST(inst), propA1, propA2, propA3, pr
     static const si5351_config_t si5351_config_##inst = {                                                                       \
         .i2c = I2C_DT_SPEC_INST_GET(inst),                                                                                      \
         .dt_config = {                                                                                                          \
-            .clkin_div = DT_INST_PROP(inst, clkin_div),                                                                         \
+            .model = DT_INST_ENUM_IDX(inst, model),                                                                             \
+            .xtal_frequency = DT_INST_PROP(inst, xtal_frequency),                                                               \
             .xtal_load = DT_INST_PROP(inst, xtal_load),                                                                         \
+            .clkin_frequency = DT_INST_PROP_OR(inst, clkin_frequency, 0),                                                       \
+            .clkin_div = DT_INST_PROP(inst, clkin_div),                                                                         \
             .plla = {                                                                                                           \
                 .clock_source = DT_INST_ENUM_IDX(inst, plla_clock_source),                                                      \
+                .fixed_multiplier = DT_INST_PROP(inst, plla_fixed_multiplier),                                                  \
+                                                                                                                                \
+                .using_frequency = DT_INST_NODE_HAS_PROPS(inst, plla_frequency, plla_frequency_fractional),                     \
+                .frequency = DT_INST_PROP_OR(inst, plla_frequency, 0),                                                          \
+                .frequency_fractional = DT_INST_PROP_OR(inst, plla_frequency_fractional, 0),                                    \
+                                                                                                                                \
+                .using_multiplier = DT_INST_NODE_HAS_PROPS(inst, plla_a, plla_b, plla_c),                                       \
+                .a = DT_INST_PROP_OR(inst, plla_a, 0),                                                                          \
+                .b = DT_INST_PROP_OR(inst, plla_b, 0),                                                                          \
+                .c = DT_INST_PROP_OR(inst, plla_c, 0),                                                                          \
+                                                                                                                                \
+                .using_multiplier_parameters = DT_INST_NODE_HAS_PROPS(inst, plla_p1, plla_p2, plla_p3),                         \
                 .p1 = DT_INST_PROP_OR(inst, plla_p1, 0),                                                                        \
                 .p2 = DT_INST_PROP_OR(inst, plla_p2, 0),                                                                        \
                 .p3 = DT_INST_PROP_OR(inst, plla_p3, 0),                                                                        \
+                                                                                                                                \
+                .integer_mode = DT_INST_PROP(inst, plla_integer_mode),                                                          \
             },                                                                                                                  \
             .pllb = {                                                                                                           \
                 .clock_source = DT_INST_ENUM_IDX(inst, pllb_clock_source),                                                      \
+                .fixed_multiplier = DT_INST_PROP(inst, pllb_fixed_multiplier),                                                  \
+                                                                                                                                \
+                .using_frequency = DT_INST_NODE_HAS_PROPS(inst, pllb_frequency, pllb_frequency_fractional),                     \
+                .frequency = DT_INST_PROP_OR(inst, pllb_frequency, 0),                                                          \
+                .frequency_fractional = DT_INST_PROP_OR(inst, pllb_frequency_fractional, 0),                                    \
+                                                                                                                                \
+                .using_multiplier = DT_INST_NODE_HAS_PROPS(inst, pllb_a, pllb_b, pllb_c),                                       \
+                .a = DT_INST_PROP_OR(inst, pllb_a, 0),                                                                          \
+                .b = DT_INST_PROP_OR(inst, pllb_b, 0),                                                                          \
+                .c = DT_INST_PROP_OR(inst, pllb_c, 0),                                                                          \
+                                                                                                                                \
+                .using_multiplier_parameters = DT_INST_NODE_HAS_PROPS(inst, pllb_p1, pllb_p2, pllb_p3),                         \
                 .p1 = DT_INST_PROP_OR(inst, pllb_p1, 0),                                                                        \
                 .p2 = DT_INST_PROP_OR(inst, pllb_p2, 0),                                                                        \
                 .p3 = DT_INST_PROP_OR(inst, pllb_p3, 0),                                                                        \
+                                                                                                                                \
+                .integer_mode = DT_INST_PROP(inst, pllb_integer_mode),                                                          \
             },                                                                                                                  \
         },                                                                                                                      \
         .num_okay_clocks = DT_INST_CHILD_NUM_STATUS_OKAY(inst),                                                                 \

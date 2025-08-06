@@ -54,7 +54,7 @@
 
 // Enums must be in same order as in bindings file skyworks,si5351.yaml
 
-// ======== SI5351 PARENT DT CONFIG START ========
+// ======== SI5351 DT CONFIG START ========
 typedef enum
 {
     SI5351_MODEL_SI5351A_B_GT,
@@ -91,7 +91,6 @@ typedef struct
     uint32_t p2 : 20;
     uint32_t p3 : 20;
 
-    bool using_integer_mode;
     bool integer_mode;
 } si5351_pll_dt_config_t;
 
@@ -116,9 +115,9 @@ typedef struct
     uint8_t num_okay_clocks;
 } si5351_config_t;
 
-// ======== SI5351 PARENT DT CONFIG END ========
+// ======== SI5351 DT CONFIG END ========
 
-// ======== SI5351 CHILD DT CONFIG START ========
+// ======== SI5351 CLOCK OUTPUT DT CONFIG START ========
 
 typedef struct
 {
@@ -161,7 +160,7 @@ typedef struct
     si5351_output_dt_config_t dt_config;
 } si5351_output_config_t;
 
-// ======== SI5351 PARENT DT CONFIG END ========
+// ======== SI5351 CLOCK OUTPUT DT CONFIG END ========
 
 typedef struct
 {
@@ -178,12 +177,12 @@ typedef struct
     si5351_output_r_t r : 3;
     bool divide_by_four;
     uint8_t phase_offset : 7;
-} si5351_output_parameters_t;
+} si5351_output_data_t;
 
 typedef struct
 {
     bool output_present;
-    si5351_output_parameters_t *current_parameters;
+    si5351_output_data_t *clock_output_data;
 } si5351_children_t;
 
 typedef struct
@@ -192,19 +191,10 @@ typedef struct
     si5351_xtal_load_t xtal_load;
     si5351_pll_parameters_t plla;
     si5351_pll_parameters_t pllb;
-} si5351_parameters_t;
 
-typedef struct
-{
-    si5351_parameters_t current_parameters;
     si5351_children_t outputs[8];
     uint8_t num_registered_clocks;
 } si5351_data_t;
-
-typedef struct
-{
-    si5351_output_parameters_t current_parameters;
-} si5351_output_data_t;
 
 // Other internally used structs
 

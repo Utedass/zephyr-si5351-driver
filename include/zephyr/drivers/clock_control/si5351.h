@@ -109,16 +109,6 @@ typedef enum
 
 typedef struct
 {
-    bool sys_init;
-    bool plla_loss_of_lock;
-    bool pllb_loss_of_lock;
-    bool clkin_loss_of_signal;
-    bool xtal_loss_of_signal;
-    uint8_t revision_id : 2;
-} si5351_status_t;
-
-typedef struct
-{
     uint8_t number : 2;
 } si5351_revision_number_t;
 

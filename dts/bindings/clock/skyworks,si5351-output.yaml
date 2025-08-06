@@ -14,7 +14,7 @@ properties:
 
   output-enabled:
     type: boolean
-    description: Whether this clock output is enabled up at init
+    description: Whether this clock output is enabled at init
 
   powered-up:
     type: boolean
